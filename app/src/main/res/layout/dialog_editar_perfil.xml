@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:overScrollMode="never">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="22dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="serif"
+            android:text="Editar información"
+            android:textColor="#2E2340"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- Nombre -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Nombre"
+            android:textColor="#2E2340"
+            android:textSize="11sp" />
+
+        <EditText
+            android:id="@+id/etPerfilNombre"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_users_input"
+            android:hint="Tu nombre"
+            android:importantForAutofill="no"
+            android:inputType="textPersonName|textCapWords"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="#2E2340"
+            android:textColorHint="#8A8494"
+            android:textSize="13sp" />
+
+        <!-- Correo (solo lectura) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="Correo"
+            android:textColor="#2E2340"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/tvPerfilCorreo"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_users_stats"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="#8A8494"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="El correo no se puede cambiar"
+            android:textColor="#8A8494"
+            android:textSize="10sp" />
+
+        <!-- Teléfono -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="Teléfono"
+            android:textColor="#2E2340"
+            android:textSize="11sp" />
+
+        <EditText
+            android:id="@+id/etPerfilTelefono"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_users_input"
+            android:hint="+57 300 000 0000"
+            android:importantForAutofill="no"
+            android:inputType="phone"
+            android:maxLength="20"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="#2E2340"
+            android:textColorHint="#8A8494"
+            android:textSize="13sp" />
+
+        <!-- Nombre del negocio -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="Nombre del negocio"
+            android:textColor="#2E2340"
+            android:textSize="11sp" />
+
+        <EditText
+            android:id="@+id/etPerfilNegocio"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_users_input"
+            android:hint="Ej. Saso Bakery"
+            android:importantForAutofill="no"
+            android:inputType="textCapWords"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="#2E2340"
+            android:textColorHint="#8A8494"
+            android:textSize="13sp" />
+
+        <!-- Dirección -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="Dirección"
+            android:textColor="#2E2340"
+            android:textSize="11sp" />
+
+        <EditText
+            android:id="@+id/etPerfilDireccion"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_users_input"
+            android:hint="Calle, número y ciudad"
+            android:importantForAutofill="no"
+            android:inputType="textPostalAddress|textCapSentences"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="#2E2340"
+            android:textColorHint="#8A8494"
+            android:textSize="13sp" />
+
+        <!-- Horario -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="Horario de atención"
+            android:textColor="#2E2340"
+            android:textSize="11sp" />
+
+        <EditText
+            android:id="@+id/etPerfilHorario"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_users_input"
+            android:hint="Ej. Lun - Sáb · 8:00 a. m. - 6:00 p. m."
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="#2E2340"
+            android:textColorHint="#8A8494"
+            android:textSize="13sp" />
+
+        <!-- Botones -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btnCancelarEdicion"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_users_input"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="Cancelar"
+                android:textColor="#5D477F"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnGuardarEdicion"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_users_button"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="Guardar"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

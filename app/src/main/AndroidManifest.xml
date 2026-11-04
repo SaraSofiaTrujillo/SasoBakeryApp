@@ -13,6 +13,22 @@
         android:theme="@style/Theme.SasoBakeryApp"
         tools:targetApi="31">
         <activity
+            android:name=".VendedorPrincipalActivity"
+            android:exported="false" />
+        <!-- Pantalla provisional de selección de rol: ahora abre primero la app -->
+        <activity
+            android:name=".RolSeleccionActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity> <!-- Panel general del administrador (ya no es la pantalla de arranque) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+        <activity
             android:name=".PedidosActivity"
             android:exported="false" />
         <activity
@@ -25,14 +41,25 @@
             android:name=".UsuariosRolesActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:name=".ProductosInventarioActivity"
+            android:exported="false" />
+        <!-- Crear o editar producto (vendedor) -->
+        <activity
+            android:name=".ProductoFormularioActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <!-- Gestión de pedidos (vendedor) -->
+        <activity
+            android:name=".PedidosVendedorActivity"
+            android:exported="false" />
+        <!-- Perfil del vendedor -->
+        <activity
+            android:name=".PerfilVendedorActivity"
+            android:exported="false" />
+        <!-- Inicio y catálogo del comprador -->
+        <activity
+            android:name=".CatalogoCompradorActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
