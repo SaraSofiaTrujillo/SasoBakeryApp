@@ -1,17 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <group
-        android:scaleX="2.6"
-        android:scaleY="2.6"
-        android:translateX="22.8"
-        android:translateY="24.1">
-        <path
-            android:fillColor="#FFFFFF"
-            android:fillType="evenOdd"
-            android:pathData="M12,3C8.1,3 5,6.1 5,10v10l2.5,-2 2.25,2 2.25,-2 2.25,2 2.25,-2 2.5,2V10c0,-3.9 -3.1,-7 -7,-7z M8.5,9h2v2h-2z M13.5,9h2v2h-2z" />
-    </group>
-</vector>
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/logo_saso"
+    android:inset="18%" />
