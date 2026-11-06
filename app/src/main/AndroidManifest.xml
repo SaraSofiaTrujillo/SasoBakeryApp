@@ -29,6 +29,15 @@
         <activity
             android:name=".LoginActivity"
             android:exported="false" />
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false" />
+
+        <!-- Recuperación de contraseña (se abre desde el login) -->
+        <activity
+            android:name=".RecuperarClaveActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- Pantalla provisional de selección de rol: se abre desde el login (solo pruebas) -->
         <activity

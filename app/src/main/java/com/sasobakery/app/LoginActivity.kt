@@ -23,13 +23,8 @@ import androidx.core.view.updatePadding
 class LoginActivity : AppCompatActivity() {
 
     // ===== CUENTAS DE PRUEBA (correo -> pantalla principal del rol) =====
-    private val cuentasDePrueba: Map<String, Class<*>> = mapOf(
-        "valentina@email.com" to CatalogoCompradorActivity::class.java,
-        "valentina.mendoza@gmail.com" to CatalogoCompradorActivity::class.java,
-        "camila.rios@sasobakery.pe" to VendedorPrincipalActivity::class.java,
-        "andrea.salas@sasobakery.pe" to MainActivity::class.java
-    )
-    private val largoMinimoClave = 6
+    private val cuentasDePrueba = CuentasRepositorio.cuentasDePrueba
+    private val largoMinimoClave = CuentasRepositorio.LARGO_MINIMO_CLAVE
     // ====================================================================
 
     private lateinit var etCorreo: EditText
@@ -79,7 +74,11 @@ class LoginActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnIniciar).setOnClickListener { iniciarSesion() }
 
         // Todavía sin pantalla
-        findViewById<View>(R.id.btnOlvide).setOnClickListener { mensaje("Próximamente") }
+        findViewById<View>(R.id.btnOlvide).setOnClickListener {
+            val intent = Intent(this, RecuperarClaveActivity::class.java)
+            intent.putExtra(RecuperarClaveActivity.EXTRA_CORREO, etCorreo.text.toString().trim())
+            startActivity(intent)
+        }
         findViewById<View>(R.id.btnGoogle).setOnClickListener { mensaje("Próximamente") }
         findViewById<View>(R.id.btnRegistro).setOnClickListener { mensaje("Próximamente") }
 
