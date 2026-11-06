@@ -20,8 +20,6 @@ enum class FiltroPedidos(val nombre: String) {
 
 class PedidosActivity : AppCompatActivity() {
 
-    // Datos de ejemplo en pesos colombianos (luego vendrán de la base de datos).
-    // Es "var" porque al cambiar el estado de un pedido se reemplaza la lista.
     private var pedidos: List<Pedido> = listOf(
         Pedido("#SB-1046", "Valentina Mendoza", "Camila R.", "Hoy, 9:02", 84000, EstadoPedido.EN_PREPARACION),
         Pedido("#SB-1047", "María Flores", "Camila R.", "Hoy, 10:32", 42000, EstadoPedido.PENDIENTE),
@@ -76,7 +74,6 @@ class PedidosActivity : AppCompatActivity() {
         refrescar()
     }
 
-    // ---------- Regla única: se usa para CONTAR y para FILTRAR ----------
 
     private fun coincide(p: Pedido, filtro: FiltroPedidos): Boolean = when (filtro) {
         FiltroPedidos.TODOS -> true
@@ -87,9 +84,6 @@ class PedidosActivity : AppCompatActivity() {
     private fun contar(filtro: FiltroPedidos): Int =
         pedidos.count { coincide(it, filtro) }
 
-    // ---------- Actualización de pantalla ----------
-
-    /** Recalcula los contadores, el estilo de los chips y la lista visible. */
     private fun refrescar() {
         chips.forEach { (chip, filtro) ->
             chip.text = "${filtro.nombre} ${contar(filtro)}"
@@ -104,9 +98,6 @@ class PedidosActivity : AppCompatActivity() {
         adapter.submit(pedidos.filter { coincide(it, filtroActual) })
     }
 
-    // ---------- Cambio de estado ----------
-
-    /** Reemplaza el estado de un pedido y vuelve a calcular todo. */
     private fun cambiarEstado(codigo: String, nuevoEstado: EstadoPedido) {
         pedidos = pedidos.map { p ->
             if (p.codigo == codigo) p.copy(estado = nuevoEstado) else p
@@ -121,8 +112,6 @@ class PedidosActivity : AppCompatActivity() {
         EstadoPedido.ENTREGADO -> null
     }
 
-    // TEMPORAL: para probar los contadores. Al tocar una tarjeta, el pedido avanza de estado.
-    // Cuando exista la pantalla de detalle del pedido, se puede borrar esta función.
     private fun avanzarEstado(pedido: Pedido) {
         val siguiente = siguienteEstado(pedido.estado)
         if (siguiente == null) {

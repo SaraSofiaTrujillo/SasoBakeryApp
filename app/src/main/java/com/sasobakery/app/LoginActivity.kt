@@ -17,16 +17,10 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-// Pantalla de inicio de sesión (acceso principal de la app).
-// Por ahora es SIMULADA: no hay autenticación real. Según el correo de prueba
-// abre la pantalla principal de cada rol. La pantalla de selección de rol
-// (RolSeleccionActivity) sigue disponible con el enlace "Entrar eligiendo un rol".
 class LoginActivity : AppCompatActivity() {
 
-    // ===== CUENTAS DE PRUEBA (correo -> pantalla principal del rol) =====
     private val cuentasDePrueba get() = CuentasRepositorio.cuentasDePrueba
     private val largoMinimoClave = CuentasRepositorio.LARGO_MINIMO_CLAVE
-    // ====================================================================
 
     private lateinit var etCorreo: EditText
     private lateinit var etClave: EditText
@@ -37,8 +31,6 @@ class LoginActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_login)
 
-        // La zona lila llega hasta arriba y el panel blanco hasta abajo;
-        // el teclado empuja el contenido para no tapar los campos.
         val cabecera = findViewById<View>(R.id.headerLogin)
         val panel = findViewById<View>(R.id.panelLogin)
         val baseArriba = cabecera.paddingTop
@@ -56,13 +48,10 @@ class LoginActivity : AppCompatActivity() {
         etClave = findViewById(R.id.etClave)
         btnMostrar = findViewById(R.id.btnMostrar)
 
-        // Correo precargado como en el mockup (borra esta línea si no lo quieres)
         etCorreo.setText("valentina@email.com")
 
-        // Mostrar / Ocultar contraseña
         btnMostrar.setOnClickListener { alternarClave() }
 
-        // Botón "Listo" del teclado
         etClave.setOnEditorActionListener { _, accion, _ ->
             if (accion == EditorInfo.IME_ACTION_DONE) {
                 iniciarSesion()
@@ -74,11 +63,9 @@ class LoginActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnIniciar).setOnClickListener { iniciarSesion() }
 
-        // Acceso con huella
         findViewById<View>(R.id.btnBiometria).setOnClickListener { entrarConBiometria() }
         findViewById<View>(R.id.btnQuitarBiometria).setOnClickListener { quitarBiometria() }
 
-        // Todavía sin pantalla
         findViewById<View>(R.id.btnOlvide).setOnClickListener {
             val intent = Intent(this, RecuperarClaveActivity::class.java)
             intent.putExtra(RecuperarClaveActivity.EXTRA_CORREO, etCorreo.text.toString().trim())
@@ -87,14 +74,11 @@ class LoginActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnGoogle).setOnClickListener { mensaje("Próximamente") }
         findViewById<View>(R.id.btnRegistro).setOnClickListener { mensaje("Próximamente") }
 
-        // Alternativa para pruebas: la pantalla de selección de rol de siempre.
-        // Sin finish(): con Atrás se vuelve a este login.
         findViewById<View>(R.id.btnElegirRol).setOnClickListener {
             startActivity(Intent(this, RolSeleccionActivity::class.java))
         }
     }
 
-    // ---------- Contraseña ----------
 
     private fun alternarClave() {
         val estabaOculta = etClave.transformationMethod is PasswordTransformationMethod
@@ -105,7 +89,6 @@ class LoginActivity : AppCompatActivity() {
         btnMostrar.text = if (estabaOculta) "Ocultar" else "Mostrar"
     }
 
-    // ---------- Iniciar sesión (simulado) ----------
 
     private fun iniciarSesion() {
         val correo = etCorreo.text.toString().trim().lowercase()
@@ -134,19 +117,15 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        // Contraseña correcta: se ofrece la huella (si el celular puede) y se entra
         terminarInicioDeSesion(correo, destino)
     }
 
-    // ---------- Acceso con huella ----------
 
-    // Cada vez que se ve el login se revisa si debe aparecer el botón de huella
     override fun onResume() {
         super.onResume()
         actualizarBotonBiometria()
     }
 
-    // El botón solo aparece si la huella está activada y el celular todavía la permite
     private fun actualizarBotonBiometria() {
         val bloque = findViewById<View>(R.id.bloqueBiometria)
         val correoActivado = BiometriaRepositorio.correoActivado(this)
@@ -161,7 +140,6 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    // Después de iniciar sesión con contraseña: ofrece activar la huella y entra a la app
     private fun terminarInicioDeSesion(correo: String, destino: Class<*>) {
         val puedeOfrecer = BiometriaHelper.estado(this) == EstadoBiometria.DISPONIBLE &&
                 !BiometriaRepositorio.estaActivada(this, correo)
@@ -214,7 +192,6 @@ class LoginActivity : AppCompatActivity() {
             .show()
     }
 
-    // Se cierra el login para que Atrás no regrese a él desde dentro de la app
     private fun abrirInicio(destino: Class<*>) {
         startActivity(Intent(this, destino))
         finish()

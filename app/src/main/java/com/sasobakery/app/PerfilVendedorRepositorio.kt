@@ -1,6 +1,5 @@
 package com.sasobakery.app
 
-// Datos del vendedor y de su negocio
 data class PerfilVendedor(
     val nombre: String,
     val correo: String,
@@ -9,7 +8,6 @@ data class PerfilVendedor(
     val direccion: String,
     val horario: String
 ) {
-    // "Camila Ríos" -> "CR" (para el avatar)
     val iniciales: String
         get() = nombre.trim()
             .split(" ")
@@ -18,11 +16,8 @@ data class PerfilVendedor(
             .joinToString("") { it.first().uppercase() }
 }
 
-// Perfil compartido entre pantallas (solo en memoria).
-// Cuando exista la base de datos, esta clase es la que se reemplaza.
 object PerfilVendedorRepositorio {
 
-    // Datos de ejemplo (el correo coincide con el de la lista de usuarios del administrador)
     private var perfil = PerfilVendedor(
         nombre = "Camila Ríos",
         correo = "camila.rios@sasobakery.pe",

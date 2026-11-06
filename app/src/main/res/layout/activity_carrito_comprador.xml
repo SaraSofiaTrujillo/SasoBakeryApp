@@ -9,7 +9,6 @@
     android:background="#FDFBFF"
     tools:context=".CarritoCompradorActivity">
 
-    <!-- ===== ENCABEZADO ===== -->
     <ImageView
         android:id="@+id/ivLogo"
         android:layout_width="40dp"
@@ -53,7 +52,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/ivLogo" />
 
-    <!-- ===== CONTENIDO CON SCROLL ===== -->
     <ScrollView
         android:id="@+id/scrollCarrito"
         android:layout_width="0dp"
@@ -74,7 +72,6 @@
             android:paddingEnd="20dp"
             android:paddingBottom="20dp">
 
-            <!-- Aviso lila -->
             <LinearLayout
                 android:id="@+id/bannerReserva"
                 android:layout_width="match_parent"
@@ -134,7 +131,7 @@
                 android:nestedScrollingEnabled="false"
                 android:overScrollMode="never" />
 
-            <!-- Carrito vacío -->
+            <!-- Carrito vacio -->
             <LinearLayout
                 android:id="@+id/layoutVacio"
                 android:layout_width="match_parent"
@@ -194,7 +191,6 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Cupón + resumen de pago -->
             <LinearLayout
                 android:id="@+id/layoutResumen"
                 android:layout_width="match_parent"
@@ -317,7 +313,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ===== BOTÓN CONTINUAR (fijo) ===== -->
     <LinearLayout
         android:id="@+id/panelContinuar"
         android:layout_width="0dp"
@@ -360,7 +355,6 @@
             android:textSize="10sp" />
     </LinearLayout>
 
-    <!-- ===== MENÚ INFERIOR (Carrito activo) ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"

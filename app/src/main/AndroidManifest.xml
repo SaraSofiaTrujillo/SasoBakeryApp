@@ -13,7 +13,7 @@
         android:theme="@style/Theme.SasoBakeryApp"
         tools:targetApi="31">
 
-        <!-- Splash: es la pantalla de arranque de la app (después abre el login) -->
+        <!-- pantalla splash -->
         <activity
             android:name=".SplashActivity"
             android:exported="true"
@@ -25,7 +25,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Inicio de sesión (se abre desde el splash) -->
+        <!-- Inicio de sesión -->
         <activity
             android:name=".LoginActivity"
             android:exported="false" />
@@ -33,13 +33,13 @@
             android:name=".LoginActivity"
             android:exported="false" />
 
-        <!-- Recuperación de contraseña (se abre desde el login) -->
+        <!-- Recuperación de contraseña -->
         <activity
             android:name=".RecuperarClaveActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- Pantalla provisional de selección de rol: se abre desde el login (solo pruebas) -->
+        <!-- Pantalla de prueba paar login -->
         <activity
             android:name=".RolSeleccionActivity"
             android:exported="false" />
@@ -64,7 +64,7 @@
         <activity
             android:name=".UsuariosRolesActivity"
             android:exported="false" />
-        <!-- Invitar usuario: registro con nombre, correo y rol (administrador) -->
+        <!-- crear usuario desde administrador-->
         <activity
             android:name=".UsuarioFormularioActivity"
             android:exported="false"
@@ -77,12 +77,12 @@
         <activity
             android:name=".ProductosInventarioActivity"
             android:exported="false" />
-        <!-- Crear o editar producto (vendedor) -->
+        <!-- Crear o editar producto desde vendedor -->
         <activity
             android:name=".ProductoFormularioActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-        <!-- Gestión de pedidos (vendedor) -->
+        <!-- Gestión de pedidos desde vendedor -->
         <activity
             android:name=".PedidosVendedorActivity"
             android:exported="false" />
@@ -91,12 +91,11 @@
             android:name=".PerfilVendedorActivity"
             android:exported="false" />
 
-        <!-- Comprador -->
         <!-- Inicio y catálogo del comprador -->
         <activity
             android:name=".CatalogoCompradorActivity"
             android:exported="false" />
-        <!-- Detalle del producto (comprador) -->
+        <!-- Detalle del producto del comprador -->
         <activity
             android:name=".ProductoDetalleActivity"
             android:exported="false" />
@@ -104,19 +103,20 @@
         <activity
             android:name=".CarritoCompradorActivity"
             android:exported="false" />
-        <!-- Entrega o recojo (comprador) -->
+        <!-- Entrega o recojo -->
         <activity
             android:name=".EntregaCompradorActivity"
             android:exported="false" />
-        <!-- Método de pago (comprador) -->
+
+        <!-- metodo de pago -->
         <activity
             android:name=".PagoCompradorActivity"
             android:exported="false" />
-        <!-- Confirmación y seguimiento del pedido (comprador) -->
+        <!-- Confirmación y seguimiento del pedido -->
         <activity
             android:name=".PedidoConfirmadoActivity"
             android:exported="false" />
-        <!-- Perfil e historial (comprador) -->
+        <!-- Perfil e historial del comprador -->
         <activity
             android:name=".PerfilCompradorActivity"
             android:exported="false" />

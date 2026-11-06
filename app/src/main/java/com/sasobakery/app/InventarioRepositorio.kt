@@ -1,13 +1,9 @@
 package com.sasobakery.app
 
-// Lista de productos compartida entre pantallas (solo en memoria).
-// Cuando exista la base de datos, esta clase es la que se reemplaza.
 object InventarioRepositorio {
 
-    // Categorías disponibles para el selector del formulario
     val categorias = listOf("Tortas", "Postres", "Brownies", "Galletas")
 
-    // Productos de prueba (los mismos que ya se veían en el inventario)
     private val productos = mutableListOf(
         ProductoInventario(
             "Torta Aurora", "Tortas", 68000, 8, id = 1,
@@ -61,33 +57,21 @@ object InventarioRepositorio {
         )
     )
 
-    // El próximo producto nuevo recibe el id 11, luego 12, etc.
     private var siguienteId = 11
 
-    // Ids de los productos que Saso destaca en "Favoritos de Saso" (el comprador los ve
-    // en ese orden). Si el vendedor desactiva alguno, deja de aparecer.
     private val idsFavoritosDeSaso = listOf(1, 2, 3, 4)
 
-    /** Copia de la lista actual (así nadie la modifica por accidente). */
     fun obtenerTodos(): List<ProductoInventario> = productos.toList()
 
-    /** Busca un producto por su id; devuelve null si no existe. */
     fun buscarPorId(id: Int): ProductoInventario? = productos.firstOrNull { it.id == id }
 
-    /** Productos que ve el comprador: solo los marcados como disponibles (visibles en el catálogo). */
     fun obtenerCatalogo(): List<ProductoInventario> = productos.filter { it.disponible }
 
-    /** "Favoritos de Saso": los destacados de la casa que además estén visibles en el catálogo. */
     fun obtenerFavoritosDeSaso(): List<ProductoInventario> =
         idsFavoritosDeSaso.mapNotNull { id ->
             productos.firstOrNull { it.id == id && it.disponible }
         }
 
-    /**
-     * Guarda un producto:
-     * - id = 0  -> es NUEVO: se le asigna un id y se agrega al inicio de la lista.
-     * - id != 0 -> es EXISTENTE: se reemplaza el que tiene ese id (no se duplica).
-     */
     fun guardar(producto: ProductoInventario) {
         if (producto.id == 0) {
             productos.add(0, producto.copy(id = siguienteId++))
@@ -101,7 +85,6 @@ object InventarioRepositorio {
         }
     }
 
-    /** Descuenta las unidades vendidas de un producto (el stock nunca baja de 0). */
     fun descontarStock(id: Int, cantidad: Int) {
         val posicion = productos.indexOfFirst { it.id == id }
         if (posicion >= 0) {

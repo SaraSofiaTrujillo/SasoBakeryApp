@@ -20,9 +20,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class UsuariosRolesActivity : AppCompatActivity() {
 
-    // Los usuarios viven en UsuariosRepositorio (datos de ejemplo en memoria, luego
-    // vendrán de la base de datos). Se vuelven a leer en onResume, así el usuario
-    // recién invitado o editado aparece al volver del formulario.
     private var usuarios: List<Usuario> = UsuariosRepositorio.obtenerTodos()
 
     private val adapter = UsuariosAdapter(
@@ -69,7 +66,6 @@ class UsuariosRolesActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.btnFiltro).setOnClickListener { proximamente() }
 
-        // Menú inferior
         findViewById<View>(R.id.navResumen).setOnClickListener { finish() }
         findViewById<View>(R.id.navPedidos).setOnClickListener {
             startActivity(Intent(this, PedidosActivity::class.java))
@@ -89,7 +85,6 @@ class UsuariosRolesActivity : AppCompatActivity() {
         refrescarLista()
     }
 
-    /** Vuelve a leer los usuarios y respeta la búsqueda y el chip activos. */
     private fun refrescarLista() {
         usuarios = UsuariosRepositorio.obtenerTodos()
         aplicarFiltros()
@@ -118,14 +113,11 @@ class UsuariosRolesActivity : AppCompatActivity() {
         }
     }
 
-    // ---------- Menú de los tres puntos ----------
-
     private fun mostrarMenuUsuario(usuario: Usuario, ancla: View) {
         val menu = PopupMenu(this, ancla)
         menu.menu.add(0, OPCION_EDITAR, 0, "Editar")
         menu.menu.add(0, OPCION_ESTADO, 1, if (usuario.activo) "Desactivar" else "Activar")
 
-        // "Eliminar" en el rojo de la app para que se note que es destructivo
         val eliminar = SpannableString("Eliminar")
         eliminar.setSpan(ForegroundColorSpan(0xFFC2485F.toInt()), 0, eliminar.length, 0)
         menu.menu.add(0, OPCION_ELIMINAR, 2, eliminar)
@@ -147,8 +139,6 @@ class UsuariosRolesActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    // ---------- Desactivar / activar ----------
-
     private fun cambiarEstado(usuario: Usuario) {
         if (usuario.activo) {
             if (UsuariosRepositorio.esUltimoAdminActivo(usuario)) {
@@ -162,7 +152,7 @@ class UsuariosRolesActivity : AppCompatActivity() {
                 .setPositiveButton("Desactivar") { _, _ -> aplicarEstado(usuario, false) }
                 .show()
         } else {
-            aplicarEstado(usuario, true)   // activar no necesita confirmación
+            aplicarEstado(usuario, true)
         }
     }
 
@@ -178,8 +168,6 @@ class UsuariosRolesActivity : AppCompatActivity() {
         }
         refrescarLista()
     }
-
-    // ---------- Eliminar ----------
 
     private fun confirmarEliminar(usuario: Usuario) {
         if (UsuariosRepositorio.esUltimoAdminActivo(usuario)) {

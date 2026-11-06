@@ -5,10 +5,6 @@ import android.text.method.PasswordTransformationMethod
 import android.widget.EditText
 import android.widget.TextView
 
-/**
- * Muestra u oculta la contraseña de este campo y cambia el texto del botón
- * ("Mostrar" / "Ocultar"). Se usa en la recuperación de contraseña.
- */
 fun EditText.alternarVisibilidadClave(boton: TextView) {
     val estabaOculta = transformationMethod is PasswordTransformationMethod
     transformationMethod =

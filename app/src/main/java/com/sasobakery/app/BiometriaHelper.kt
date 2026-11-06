@@ -12,27 +12,20 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import javax.crypto.Cipher
 
-// Qué puede hacer este celular con la biometría
 enum class EstadoBiometria {
-    DISPONIBLE,             // hay sensor y al menos una huella registrada
-    SIN_SENSOR,             // el celular no tiene sensor biométrico
-    SIN_HUELLA_REGISTRADA,  // hay sensor, pero no hay huella registrada en los ajustes
-    NO_DISPONIBLE           // temporalmente no se puede usar (bloqueado, actualización pendiente…)
+    DISPONIBLE,
+    SIN_SENSOR,
+    SIN_HUELLA_REGISTRADA,
+    NO_DISPONIBLE
 }
 
-/** "valentina.mendoza@gmail.com" -> "va***@gmail.com" */
 fun enmascararCorreo(correo: String): String {
     val arroba = correo.indexOf('@')
     if (arroba <= 0) return correo
     return correo.take(minOf(2, arroba)) + "***" + correo.substring(arroba)
 }
-
-// Todo lo de Android que tiene que ver con la ventanita de huella (BiometricPrompt).
-// Las pantallas solo llaman a estado(), activar() y entrar().
 object BiometriaHelper {
 
-    // Solo biometría "fuerte" (huella, y rostro en los celulares que lo certifican como fuerte).
-    // Es lo que Android exige para proteger una llave del Keystore.
     private const val AUTENTICADORES = BiometricManager.Authenticators.BIOMETRIC_STRONG
 
     fun estado(contexto: Context): EstadoBiometria =
@@ -43,7 +36,6 @@ object BiometriaHelper {
             else -> EstadoBiometria.NO_DISPONIBLE
         }
 
-    /** Abre los ajustes del celular para registrar una huella. */
     fun abrirAjustesDeRegistro(actividad: Activity) {
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Intent(Settings.ACTION_BIOMETRIC_ENROLL).putExtra(
@@ -59,10 +51,6 @@ object BiometriaHelper {
         }
     }
 
-    /**
-     * Activa la huella para [correo]: pide la huella una vez y guarda el acceso cifrado.
-     * [alTerminar] recibe true si quedó activada.
-     */
     fun activar(actividad: FragmentActivity, correo: String, alTerminar: (Boolean) -> Unit) {
         val cipher = BiometriaRepositorio.cifradoParaActivar()
         if (cipher == null) {
@@ -92,16 +80,12 @@ object BiometriaHelper {
         )
     }
 
-    /**
-     * Entra con la huella: si es correcta, llama a [alEntrar] con el correo de la cuenta.
-     * Si no se puede o se cancela, llama a [alFallar] (el comprador usa su contraseña).
-     */
     fun entrar(actividad: FragmentActivity, alEntrar: (String) -> Unit, alFallar: () -> Unit) {
         val cipher = BiometriaRepositorio.cifradoParaEntrar(actividad)
         if (cipher == null) {
             avisar(
                 actividad,
-                "Tu huella cambió o ya no está disponible. Inicia sesión con tu contraseña y vuelve a activarla."
+                "Tu huella cambio o ya no esta disponible. Inicia sesión con tu contraseña y vuelve a activarla."
             )
             alFallar()
             return
@@ -121,8 +105,6 @@ object BiometriaHelper {
                     avisar(actividad, "No pudimos verificar tu acceso. Inicia sesión con tu contraseña.")
                     alFallar()
                 } else {
-                    // BACKEND: aquí se envía el token al servidor para validarlo
-                    // antes de abrir la app. Hoy se acepta sin consultar a nadie.
                     alEntrar(correo)
                 }
             },
@@ -133,8 +115,6 @@ object BiometriaHelper {
         )
     }
 
-    // ---------- Ventanita de huella ----------
-
     private fun pedirHuella(
         actividad: FragmentActivity,
         titulo: String,
@@ -142,7 +122,7 @@ object BiometriaHelper {
         textoCancelar: String,
         cipher: Cipher,
         alAutenticar: (Cipher) -> Unit,
-        alTerminarSinExito: (String?) -> Unit // null = el usuario canceló (no se muestra aviso)
+        alTerminarSinExito: (String?) -> Unit
     ) {
         val respuesta = object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
@@ -162,13 +142,11 @@ object BiometriaHelper {
                     BiometricPrompt.ERROR_LOCKOUT ->
                         "Demasiados intentos. Espera unos segundos o usa tu contraseña."
                     BiometricPrompt.ERROR_LOCKOUT_PERMANENT ->
-                        "La huella quedó bloqueada. Desbloquea el celular con tu PIN o usa tu contraseña."
+                        "La huella quedo bloqueada. Desbloquea el celular con tu PIN o usa tu contraseña."
                     else -> mensaje.toString()
                 }
                 alTerminarSinExito(aviso)
             }
-
-            // onAuthenticationFailed (huella no reconocida): Android deja intentar de nuevo solo.
         }
 
         val prompt = BiometricPrompt(actividad, ContextCompat.getMainExecutor(actividad), respuesta)

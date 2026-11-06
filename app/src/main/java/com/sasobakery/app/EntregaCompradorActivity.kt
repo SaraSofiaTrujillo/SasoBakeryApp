@@ -14,8 +14,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-// Paso 2 de la compra: entrega a domicilio o recojo, dirección, fecha y horario.
-// Todo lo que se elige se guarda en EntregaRepositorio.
 class EntregaCompradorActivity : AppCompatActivity() {
 
     private lateinit var cardDomicilio: View
@@ -32,7 +30,6 @@ class EntregaCompradorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Sin productos en el carrito no tiene sentido esta pantalla
         if (CarritoRepositorio.cantidadTotal() == 0) {
             finish()
             return
@@ -62,13 +59,11 @@ class EntregaCompradorActivity : AppCompatActivity() {
         )
         fechas = EntregaRepositorio.fechasDisponibles()
 
-        // Costo del domicilio en pesos colombianos
         findViewById<TextView>(R.id.tvCostoDomicilio).text =
             formatearCop(EntregaRepositorio.COSTO_DOMICILIO)
 
         findViewById<View>(R.id.btnAtras).setOnClickListener { finish() }
 
-        // Domicilio o recoger
         cardDomicilio.setOnClickListener {
             EntregaRepositorio.tipo = TipoEntrega.ENTREGA
             refrescar()
@@ -78,10 +73,8 @@ class EntregaCompradorActivity : AppCompatActivity() {
             refrescar()
         }
 
-        // Dirección
         findViewById<View>(R.id.btnDireccion).setOnClickListener { mostrarDialogoDireccion() }
 
-        // Fecha
         chipsFecha.forEachIndexed { indice, chip ->
             chip.setOnClickListener {
                 EntregaRepositorio.indiceFecha = indice
@@ -89,22 +82,17 @@ class EntregaCompradorActivity : AppCompatActivity() {
             }
         }
 
-        // Horario
         findViewById<View>(R.id.btnHorario).setOnClickListener { mostrarDialogoHorario() }
 
-        // Continuar al pago
         findViewById<View>(R.id.btnContinuarPago).setOnClickListener { continuarAlPago() }
 
         refrescar()
     }
 
-    // ---------- Pantalla ----------
 
-    /** Vuelve a dibujar todo según lo que esté elegido en EntregaRepositorio. */
     private fun refrescar() {
         val domicilio = EntregaRepositorio.tipo == TipoEntrega.ENTREGA
 
-        // Tarjetas: la elegida lleva borde morado
         cardDomicilio.setBackgroundResource(
             if (domicilio) R.drawable.bg_entrega_opcion_seleccionada else R.drawable.bg_users_input
         )
@@ -112,12 +100,10 @@ class EntregaCompradorActivity : AppCompatActivity() {
             if (domicilio) R.drawable.bg_users_input else R.drawable.bg_entrega_opcion_seleccionada
         )
 
-        // La dirección solo se pide si es a domicilio
         seccionDireccion.visibility = if (domicilio) View.VISIBLE else View.GONE
         seccionRecoger.visibility = if (domicilio) View.GONE else View.VISIBLE
         tvTituloFecha.text = if (domicilio) "Fecha y hora" else "Fecha y hora de recogida"
 
-        // Tarjeta de dirección
         if (EntregaRepositorio.tieneDireccion()) {
             tvDirEtiqueta.text = EntregaRepositorio.etiquetaDireccion
             tvDirDetalle.text = EntregaRepositorio.direccion
@@ -126,7 +112,6 @@ class EntregaCompradorActivity : AppCompatActivity() {
             tvDirDetalle.text = "Toca para escribir tu dirección de entrega"
         }
 
-        // Chips de fecha: el elegido en morado
         chipsFecha.forEachIndexed { indice, chip ->
             val f = fechas[indice]
             chip.text = "${f.dia}\n${f.fecha}"
@@ -141,8 +126,6 @@ class EntregaCompradorActivity : AppCompatActivity() {
 
         tvHorario.text = EntregaRepositorio.horario
     }
-
-    // ---------- Diálogos ----------
 
     private fun mostrarDialogoHorario() {
         val opciones = EntregaRepositorio.HORARIOS.toTypedArray()
@@ -166,7 +149,6 @@ class EntregaCompradorActivity : AppCompatActivity() {
         val etEtiqueta = vista.findViewById<EditText>(R.id.etDirEtiqueta)
         val etDireccion = vista.findViewById<EditText>(R.id.etDirDireccion)
 
-        // Se llenan con lo que ya se haya escrito antes
         etEtiqueta.setText(EntregaRepositorio.etiquetaDireccion)
         etDireccion.setText(EntregaRepositorio.direccion)
 
@@ -192,24 +174,19 @@ class EntregaCompradorActivity : AppCompatActivity() {
         }
 
         dialogo.setContentView(vista)
-        // Se abre completa y el teclado no tapa los campos
         dialogo.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         dialogo.behavior.skipCollapsed = true
         dialogo.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         dialogo.show()
     }
 
-    // ---------- Continuar ----------
-
     private fun continuarAlPago() {
-        // A domicilio es obligatorio tener dirección
         if (EntregaRepositorio.tipo == TipoEntrega.ENTREGA && !EntregaRepositorio.tieneDireccion()) {
             mensaje("Agrega la dirección de entrega")
             mostrarDialogoDireccion()
             return
         }
 
-        // Todo queda guardado en EntregaRepositorio para la pantalla de pago
         startActivity(android.content.Intent(this, PagoCompradorActivity::class.java))
     }
 

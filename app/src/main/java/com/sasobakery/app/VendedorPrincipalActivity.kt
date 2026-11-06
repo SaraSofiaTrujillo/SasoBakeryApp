@@ -15,19 +15,17 @@ import androidx.core.view.WindowInsetsCompat
 import java.util.Calendar
 import java.util.Locale
 
-// Pedido tal como se muestra en el panel del vendedor
 data class PedidoVendedor(
     val codigo: String,
     val hace: String,
     val cliente: String,
     val detalle: String,
-    val total: Int, // pesos colombianos (COP)
-    val estado: EstadoPedido // se reutiliza el de PedidosAdapter.kt
+    val total: Int,
+    val estado: EstadoPedido
 )
 
 class VendedorPrincipalActivity : AppCompatActivity() {
 
-    // ---------- Datos de ejemplo (luego vendrán de la base de datos) ----------
     private val nombreVendedor = "Camila"
     private val pedidosHoy = 12
     private val porPreparar = 5
@@ -56,8 +54,6 @@ class VendedorPrincipalActivity : AppCompatActivity() {
         mostrarPedidos()
         configurarBotones()
     }
-
-    // ---------- Pantalla ----------
 
     private fun mostrarEncabezado() {
         val hora = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
@@ -96,7 +92,6 @@ class VendedorPrincipalActivity : AppCompatActivity() {
             estado.backgroundTintList = ColorStateList.valueOf(Color.parseColor(p.estado.fondo))
             estado.setTextColor(Color.parseColor(p.estado.texto))
 
-            // La última fila no lleva línea divisoria
             fila.findViewById<View>(R.id.divider).visibility =
                 if (indice == pedidosEnCurso.lastIndex) View.GONE else View.VISIBLE
 
@@ -111,16 +106,12 @@ class VendedorPrincipalActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnNuevoProducto).setOnClickListener { proximamente() }
         findViewById<View>(R.id.btnActualizarStock).setOnClickListener { proximamente() }
 
-        // Menú inferior: Resumen ya es esta pantalla.
         findViewById<View>(R.id.navPedidos).setOnClickListener { abrirPedidos() }
         findViewById<View>(R.id.navProductos).setOnClickListener { abrirInventario() }
         findViewById<View>(R.id.btnActualizarStock).setOnClickListener { abrirInventario() }
         findViewById<View>(R.id.navMas).setOnClickListener { abrirPerfil() }
     }
 
-    // ---------- Utilidades ----------
-
-    // 648000 -> "648.000"
     private fun formatoPesos(valor: Int): String =
         String.format(Locale.US, "%,d", valor).replace(",", ".")
     private fun abrirInventario() {

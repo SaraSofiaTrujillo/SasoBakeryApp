@@ -8,7 +8,6 @@
     android:layout_height="match_parent"
     android:background="#FDFBFF">
 
-    <!-- ===== CONTENIDO CON SCROLL (todo menos el menú inferior) ===== -->
     <ScrollView
         android:id="@+id/scrollCatalogo"
         android:layout_width="0dp"
@@ -70,7 +69,6 @@
                         android:textSize="8sp" />
                 </LinearLayout>
 
-                <!-- Acceso al carrito con globito de cantidad -->
                 <FrameLayout
                     android:id="@+id/btnCarrito"
                     android:layout_width="50dp"
@@ -113,7 +111,6 @@
                 </FrameLayout>
             </LinearLayout>
 
-            <!-- ===== SALUDO ===== -->
             <TextView
                 android:id="@+id/tvSaludo"
                 android:layout_width="wrap_content"
@@ -133,7 +130,6 @@
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
-            <!-- ===== BUSCADOR ===== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
@@ -168,7 +164,6 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <!-- ===== CHIPS DE CATEGORÍA ===== -->
             <HorizontalScrollView
                 android:id="@+id/scrollChips"
                 android:layout_width="match_parent"
@@ -254,7 +249,6 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
-            <!-- ===== BANNER: ESPECIAL DE LA SEMANA ===== -->
             <LinearLayout
                 android:id="@+id/bannerEspecial"
                 android:layout_width="match_parent"
@@ -315,7 +309,6 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- Marcador de la foto del banner -->
                 <FrameLayout
                     android:layout_width="112dp"
                     android:layout_height="112dp"
@@ -335,7 +328,6 @@
                 </FrameLayout>
             </LinearLayout>
 
-            <!-- ===== TÍTULO DE LA SECCIÓN + "Ver todas" ===== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -367,7 +359,6 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- ===== PRODUCTOS (cuadrícula de 2 columnas) ===== -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvCatalogo"
                 android:layout_width="match_parent"
@@ -395,7 +386,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ===== MENÚ INFERIOR (Inicio activo) ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"

@@ -9,7 +9,6 @@
     android:background="#FDFBFF"
     tools:context=".ProductosInventarioActivity">
 
-    <!-- ===== ENCABEZADO ===== -->
     <ImageView
         android:id="@+id/ivLogo"
         android:layout_width="40dp"
@@ -59,7 +58,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/ivLogo" />
 
-    <!-- ===== CONTENIDO CON SCROLL ===== -->
     <ScrollView
         android:id="@+id/scrollInventario"
         android:layout_width="0dp"
@@ -140,7 +138,6 @@
                 </FrameLayout>
             </LinearLayout>
 
-            <!-- Chips de categoría -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -199,7 +196,6 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
-            <!-- Aviso de stock bajo -->
             <LinearLayout
                 android:id="@+id/bannerStockBajo"
                 android:layout_width="match_parent"
@@ -252,7 +248,6 @@
                     android:tint="#B7791F" />
             </LinearLayout>
 
-            <!-- Lista de productos -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvInventario"
                 android:layout_width="match_parent"
@@ -274,7 +269,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ===== MENÚ INFERIOR (Productos activo) ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"

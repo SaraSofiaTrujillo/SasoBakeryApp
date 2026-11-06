@@ -20,12 +20,11 @@ enum class EstadoProducto(val etiqueta: String) {
 data class Producto(
     val nombre: String,
     val categoria: String,
-    val precio: Int, // pesos colombianos (COP)
+    val precio: Int,
     val estado: EstadoProducto,
     @DrawableRes val imagen: Int? = null
 )
 
-// 28000 -> "28.000"
 private fun formatoCop(valor: Int): String =
     String.format(Locale.US, "%,d", valor).replace(",", ".")
 
@@ -54,7 +53,6 @@ class ProductosAdapter(
         holder.tvDetalle.text = "${p.categoria} · \$ ${formatoCop(p.precio)}"
         holder.tvEstado.text = p.estado.etiqueta
 
-        // Foto: si no hay imagen real, se muestra un icono provisional
         if (p.imagen != null) {
             holder.ivFoto.setPadding(0, 0, 0, 0)
             holder.ivFoto.imageTintList = null
@@ -66,7 +64,6 @@ class ProductosAdapter(
             holder.ivFoto.imageTintList = ColorStateList.valueOf(Color.parseColor("#7B5EA7"))
         }
 
-        // Colores de la etiqueta: fondo a texto
         val (fondo, texto) = when (p.estado) {
             EstadoProducto.ACTIVO -> "#DDF2E6" to "#3F7D5A"
             EstadoProducto.STOCK_BAJO -> "#FCEBD0" to "#B7791F"

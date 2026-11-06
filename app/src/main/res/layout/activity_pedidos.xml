@@ -9,7 +9,6 @@
     android:background="#FDFBFF"
     tools:context=".PedidosActivity">
 
-    <!-- ===== CONTENIDO CON SCROLL ===== -->
     <ScrollView
         android:id="@+id/scrollPedidos"
         android:layout_width="0dp"
@@ -30,7 +29,6 @@
             android:paddingEnd="20dp"
             android:paddingBottom="20dp">
 
-            <!-- Encabezado -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -78,14 +76,12 @@
                 </FrameLayout>
             </LinearLayout>
 
-            <!-- Tarjetas de estadísticas -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:orientation="horizontal">
 
-                <!-- HOY -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -128,7 +124,6 @@
                         android:textSize="10sp" />
                 </LinearLayout>
 
-                <!-- VENTAS -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -171,7 +166,6 @@
                         android:textSize="10sp" />
                 </LinearLayout>
 
-                <!-- ATENCIÓN -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -214,7 +208,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Filtros -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -264,7 +257,6 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
-            <!-- Pedidos (2 columnas) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvPedidos"
                 android:layout_width="match_parent"
@@ -277,7 +269,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ===== MENÚ INFERIOR (Pedidos activo) ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"

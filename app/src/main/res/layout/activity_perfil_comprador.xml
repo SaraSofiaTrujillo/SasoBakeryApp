@@ -9,7 +9,6 @@
     android:background="#FDFBFF"
     tools:context=".PerfilCompradorActivity">
 
-    <!-- ===== CONTENIDO CON SCROLL ===== -->
     <ScrollView
         android:id="@+id/scrollPerfil"
         android:layout_width="0dp"
@@ -27,7 +26,6 @@
             android:orientation="vertical"
             android:paddingBottom="24dp">
 
-            <!-- ===== ZONA LILA: logo, lápiz, avatar, nombre, números ===== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -117,7 +115,6 @@
                     android:textSize="12sp"
                     tools:text="valentina@email.com" />
 
-                <!-- Pedidos y puntos -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -185,7 +182,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- ===== MI ACTIVIDAD (las filas se crean en el código) ===== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -207,7 +203,6 @@
                 android:background="@drawable/bg_users_input"
                 android:orientation="vertical" />
 
-            <!-- ===== MÁS OPCIONES ===== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -231,7 +226,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ===== MENÚ INFERIOR (Perfil activo) ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"

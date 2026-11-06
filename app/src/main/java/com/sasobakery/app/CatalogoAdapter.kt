@@ -10,7 +10,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-// Tarjetas de producto del catálogo del comprador (cuadrícula de 2 columnas)
 class CatalogoAdapter(
     private val onProductoClick: (ProductoInventario) -> Unit,
     private val onAgregarClick: (ProductoInventario) -> Unit,
@@ -45,15 +44,13 @@ class CatalogoAdapter(
         holder.ivFoto.mostrarFotoProducto(p, 32)
         holder.tvCategoria.text = p.categoria
         holder.tvNombre.text = p.nombre
-        holder.tvPrecio.text = formatearCop(p.precio) // precio real del inventario
+        holder.tvPrecio.text = formatearCop(p.precio)
 
-        // Agotado: etiqueta visible y botón "+" en gris
         val agotado = p.nivel == NivelStock.AGOTADO
         holder.tvAgotado.visibility = if (agotado) View.VISIBLE else View.GONE
         holder.btnAgregar.backgroundTintList =
             if (agotado) ColorStateList.valueOf(Color.parseColor("#C9C1D6")) else null
 
-        // Corazón: relleno y rosa si el comprador lo marcó
         val esFavorito = FavoritosRepositorio.esFavorito(p.id)
         holder.ivCorazon.setImageResource(
             if (esFavorito) R.drawable.ic_heart_filled else R.drawable.ic_heart
@@ -66,7 +63,6 @@ class CatalogoAdapter(
         holder.btnAgregar.setOnClickListener { onAgregarClick(p) }
         holder.btnFavorito.setOnClickListener {
             onFavoritoClick(p)
-            // Se vuelve a dibujar solo esta tarjeta para ver el corazón actualizado
             @Suppress("DEPRECATION")
             val posicion = holder.adapterPosition
             if (posicion != RecyclerView.NO_POSITION) notifyItemChanged(posicion)

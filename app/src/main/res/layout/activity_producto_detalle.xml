@@ -9,7 +9,6 @@
     android:background="#FDFBFF"
     tools:context=".ProductoDetalleActivity">
 
-    <!-- ===== CONTENIDO CON SCROLL ===== -->
     <ScrollView
         android:id="@+id/scrollDetalle"
         android:layout_width="0dp"
@@ -27,7 +26,6 @@
             android:orientation="vertical"
             android:paddingBottom="24dp">
 
-            <!-- Foto + botón atrás + corazón + etiqueta "Agotado" -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="280dp"
@@ -105,7 +103,6 @@
                     android:visibility="gone" />
             </FrameLayout>
 
-            <!-- Información del producto -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -160,7 +157,6 @@
                     android:textStyle="bold"
                     tools:text="10 porciones" />
 
-                <!-- Disponibilidad -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -207,7 +203,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ===== BARRA INFERIOR: cantidad + agregar ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"

@@ -12,7 +12,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-// Filtros de la pantalla de gestión de pedidos del vendedor
 enum class FiltroGestion(val etiqueta: String) {
     TODAS("Todas"),
     NUEVOS("Nuevos"),
@@ -78,13 +77,10 @@ class PedidosVendedorActivity : AppCompatActivity() {
         findViewById<View>(R.id.navMas).setOnClickListener { proximamente() }
     }
 
-    // Cada vez que se vuelve a esta pantalla se leen de nuevo los pedidos
     override fun onResume() {
         super.onResume()
         refrescar()
     }
-
-    // ---------- Regla única: se usa para CONTAR y para FILTRAR ----------
 
     private fun coincide(p: PedidoGestion, filtro: FiltroGestion): Boolean = when (filtro) {
         FiltroGestion.TODAS -> true
@@ -93,9 +89,6 @@ class PedidosVendedorActivity : AppCompatActivity() {
         FiltroGestion.LISTOS -> !p.cancelado && p.estado == EstadoPedido.LISTO
     }
 
-    // ---------- Actualización de pantalla ----------
-
-    /** Recalcula contadores, estilo de chips y la lista visible. */
     private fun refrescar() {
         val todos = PedidosVendedorRepositorio.obtenerTodos()
 
@@ -119,9 +112,6 @@ class PedidosVendedorActivity : AppCompatActivity() {
         tvVacio.visibility = if (lista.isEmpty()) View.VISIBLE else View.GONE
     }
 
-    // ---------- Cambio de estado ----------
-
-    /** Pasa el pedido al siguiente estado (Aceptar, Marcar listo, Entregar). */
     private fun avanzar(pedido: PedidoGestion) {
         val actualizado = PedidosVendedorRepositorio.avanzarEstado(pedido.codigo)
         refrescar()

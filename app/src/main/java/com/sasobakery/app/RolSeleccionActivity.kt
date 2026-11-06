@@ -11,8 +11,6 @@ import androidx.core.view.WindowInsetsCompat
 
 class RolSeleccionActivity : AppCompatActivity() {
 
-    // Pantalla principal de cada rol.
-    // "null" significa que esa pantalla todavía no existe.
     private val destinoAdministrador: Class<*>? = MainActivity::class.java
     private val destinoVendedor: Class<*>? = VendedorPrincipalActivity::class.java
     private val destinoComprador: Class<*>? = CatalogoCompradorActivity::class.java
@@ -47,7 +45,6 @@ class RolSeleccionActivity : AppCompatActivity() {
                 Toast.LENGTH_SHORT
             ).show()
         } else {
-            // Sin finish(): el botón Atrás vuelve aquí para probar otro rol
             startActivity(Intent(this, destino))
         }
     }

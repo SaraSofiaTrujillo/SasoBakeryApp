@@ -10,9 +10,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-// Historial de pedidos del comprador.
-// Lee los pedidos de PedidosVendedorRepositorio, así que cuando el vendedor cambia
-// un estado, aquí se ve reflejado.
+
 class MisPedidosCompradorActivity : AppCompatActivity() {
 
     private val adapter = MisPedidosAdapter { pedido -> abrirSeguimiento(pedido) }
@@ -38,7 +36,6 @@ class MisPedidosCompradorActivity : AppCompatActivity() {
         rv.adapter = adapter
     }
 
-    // Cada vez que se vuelve a esta pantalla se leen de nuevo los pedidos
     override fun onResume() {
         super.onResume()
         val lista = PerfilCompradorRepositorio.misPedidos()

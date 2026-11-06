@@ -19,7 +19,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- ===== ZONA LILA: volver + logo ===== -->
             <FrameLayout
                 android:id="@+id/headerRecuperar"
                 android:layout_width="match_parent"
@@ -27,7 +26,6 @@
                 android:paddingTop="16dp"
                 android:paddingBottom="32dp">
 
-                <!-- Círculos decorativos (los mismos del login) -->
                 <View
                     android:layout_width="110dp"
                     android:layout_height="110dp"
@@ -101,7 +99,6 @@
                 </LinearLayout>
             </FrameLayout>
 
-            <!-- ===== PANEL BLANCO: 4 pasos (se muestra uno a la vez) ===== -->
             <LinearLayout
                 android:id="@+id/panelRecuperar"
                 android:layout_width="match_parent"
@@ -114,7 +111,6 @@
                 android:paddingEnd="24dp"
                 android:paddingBottom="24dp">
 
-                <!-- PASO 1: correo -->
                 <LinearLayout
                     android:id="@+id/paso1"
                     android:layout_width="match_parent"
@@ -134,7 +130,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="No te preocupes. Escribe el correo de tu cuenta y te enviaremos un código de 6 dígitos para crear una nueva."
+                        android:text="No te preocupes, escribe el correo de tu cuenta y te enviaremos un codigo de 6 digitos para crear una nueva."
                         android:textColor="#8A8494"
                         android:textSize="12sp" />
 
@@ -173,7 +169,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
-                        android:text="Enviar código"
+                        android:text="Enviar codigo"
                         android:textColor="#FFFFFF"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -193,7 +189,6 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- PASO 2: código -->
                 <LinearLayout
                     android:id="@+id/paso2"
                     android:layout_width="match_parent"
@@ -217,13 +212,13 @@
                         android:layout_marginTop="6dp"
                         android:textColor="#8A8494"
                         android:textSize="12sp"
-                        tools:text="Si el correo va***@gmail.com tiene una cuenta, le enviamos un código de 6 dígitos." />
+                        tools:text="Si el correo va***@gmail.com tiene una cuenta, le enviamos un codigo de 6 digitos." />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="22dp"
-                        android:text="Código de verificación"
+                        android:text="Codigo de verificación"
                         android:textColor="#2E2340"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -257,7 +252,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
-                        android:text="Verificar código"
+                        android:text="Verificar codigo"
                         android:textColor="#FFFFFF"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -274,7 +269,7 @@
                         android:textColor="#8A8494"
                         android:textSize="12sp"
                         android:textStyle="bold"
-                        tools:text="Reenviar código en 30 s" />
+                        tools:text="Reenviar codigo en 30 s" />
 
                     <TextView
                         android:id="@+id/btnCambiarCorreo"
@@ -289,7 +284,6 @@
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
-                    <!-- Aviso de pruebas: se borra cuando exista el envío real de correos -->
                     <TextView
                         android:id="@+id/tvNotaPrueba"
                         android:layout_width="match_parent"
@@ -298,12 +292,11 @@
                         android:background="@drawable/bg_catalogo_manage"
                         android:gravity="center"
                         android:padding="10dp"
-                        android:text="Modo prueba: todavía no se envían correos. Usa el código 123456."
+                        android:text="Modo prueba: todavía no se envían correos se usa el código 123456."
                         android:textColor="#5D477F"
                         android:textSize="11sp" />
                 </LinearLayout>
 
-                <!-- PASO 3: nueva contraseña -->
                 <LinearLayout
                     android:id="@+id/paso3"
                     android:layout_width="match_parent"

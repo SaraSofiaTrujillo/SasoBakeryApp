@@ -9,7 +9,6 @@
     android:background="#FDFBFF"
     tools:context=".EntregaCompradorActivity">
 
-    <!-- ===== ENCABEZADO ===== -->
     <FrameLayout
         android:id="@+id/btnAtras"
         android:layout_width="40dp"
@@ -45,7 +44,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/btnAtras" />
 
-    <!-- ===== CONTENIDO CON SCROLL ===== -->
     <ScrollView
         android:id="@+id/scrollEntrega"
         android:layout_width="0dp"
@@ -66,7 +64,6 @@
             android:paddingEnd="20dp"
             android:paddingBottom="24dp">
 
-            <!-- Pasos: Carrito ✓ - Entrega 2 - Pago 3 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -182,7 +179,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Pregunta -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -201,7 +197,6 @@
                 android:textColor="#8A8494"
                 android:textSize="12sp" />
 
-            <!-- Opciones: domicilio / recoger -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -298,7 +293,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Dirección (solo con domicilio) -->
             <LinearLayout
                 android:id="@+id/seccionDireccion"
                 android:layout_width="match_parent"
@@ -377,7 +371,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Recogida en tienda (solo con recoger) -->
             <LinearLayout
                 android:id="@+id/seccionRecoger"
                 android:layout_width="match_parent"
@@ -429,7 +422,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Fecha y hora -->
             <TextView
                 android:id="@+id/tvTituloFecha"
                 android:layout_width="wrap_content"
@@ -516,7 +508,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ===== BOTÓN CONTINUAR (fijo abajo) ===== -->
     <LinearLayout
         android:id="@+id/panelPago"
         android:layout_width="0dp"

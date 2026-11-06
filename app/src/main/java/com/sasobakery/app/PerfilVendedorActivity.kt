@@ -28,11 +28,9 @@ class PerfilVendedorActivity : AppCompatActivity() {
             insets
         }
 
-        // Botones principales
         findViewById<View>(R.id.btnEditar).setOnClickListener { mostrarEditar() }
         findViewById<View>(R.id.btnCerrarSesion).setOnClickListener { confirmarCerrarSesion() }
 
-        // Menú inferior: Más ya es esta pantalla
         findViewById<View>(R.id.navResumen).setOnClickListener { volverAlResumen() }
         findViewById<View>(R.id.navPedidos).setOnClickListener {
             startActivity(Intent(this, PedidosVendedorActivity::class.java))
@@ -44,7 +42,6 @@ class PerfilVendedorActivity : AppCompatActivity() {
         }
     }
 
-    // Cada vez que se vuelve a esta pantalla se leen de nuevo los datos
     override fun onResume() {
         super.onResume()
         mostrarPerfil()
@@ -66,7 +63,6 @@ class PerfilVendedorActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvDatoHorario).text = p.horario
     }
 
-    // ---------- Editar información ----------
 
     private fun mostrarEditar() {
         val actual = PerfilVendedorRepositorio.obtener()
@@ -79,7 +75,6 @@ class PerfilVendedorActivity : AppCompatActivity() {
         val etDireccion = vista.findViewById<EditText>(R.id.etPerfilDireccion)
         val etHorario = vista.findViewById<EditText>(R.id.etPerfilHorario)
 
-        // Se llenan con los datos actuales (el correo solo se muestra)
         etNombre.setText(actual.nombre)
         vista.findViewById<TextView>(R.id.tvPerfilCorreo).text = actual.correo
         etTelefono.setText(actual.telefono)
@@ -96,7 +91,6 @@ class PerfilVendedorActivity : AppCompatActivity() {
             val telefono = etTelefono.text.toString().trim()
             val negocio = etNegocio.text.toString().trim()
 
-            // Nombre, teléfono y negocio son obligatorios
             if (nombre.isEmpty()) {
                 etNombre.error = "Escribe tu nombre"
                 etNombre.requestFocus()
@@ -128,16 +122,13 @@ class PerfilVendedorActivity : AppCompatActivity() {
         }
 
         dialogo.setContentView(vista)
-        // Se abre completa y el teclado no tapa los campos
         dialogo.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         dialogo.behavior.skipCollapsed = true
         dialogo.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         dialogo.show()
     }
 
-    // ---------- Navegación ----------
 
-    // Vuelve al panel del vendedor que ya estaba abierto (no abre uno nuevo encima)
     private fun volverAlResumen() {
         val intent = Intent(this, VendedorPrincipalActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -154,7 +145,6 @@ class PerfilVendedorActivity : AppCompatActivity() {
             .show()
     }
 
-    // Va a la selección de rol y borra el historial (Atrás no regresa al perfil)
     private fun cerrarSesion() {
         val intent = Intent(this, LoginActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

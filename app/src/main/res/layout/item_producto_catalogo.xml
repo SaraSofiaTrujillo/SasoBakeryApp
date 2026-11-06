@@ -10,7 +10,6 @@
     android:focusable="true"
     android:orientation="vertical">
 
-    <!-- Foto + corazón + etiqueta "Agotado" -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="120dp"
@@ -68,7 +67,6 @@
             android:visibility="gone" />
     </FrameLayout>
 
-    <!-- Categoría, nombre, precio y botón "+" -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

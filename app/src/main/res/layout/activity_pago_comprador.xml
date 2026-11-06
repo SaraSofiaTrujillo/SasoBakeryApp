@@ -9,7 +9,6 @@
     android:background="#FDFBFF"
     tools:context=".PagoCompradorActivity">
 
-    <!-- ===== ENCABEZADO ===== -->
     <FrameLayout
         android:id="@+id/btnAtras"
         android:layout_width="40dp"
@@ -45,7 +44,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/btnAtras" />
 
-    <!-- ===== CONTENIDO CON SCROLL ===== -->
     <ScrollView
         android:id="@+id/scrollPago"
         android:layout_width="0dp"
@@ -66,7 +64,6 @@
             android:paddingEnd="20dp"
             android:paddingBottom="24dp">
 
-            <!-- Pasos: Carrito ✓ - Entrega ✓ - Pago 3 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -183,7 +180,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Título -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -194,7 +190,6 @@
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
-            <!-- Opciones de pago -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvMetodos"
                 android:layout_width="match_parent"
@@ -218,7 +213,6 @@
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <!-- Resumen del pedido -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -330,7 +324,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ===== BOTÓN PAGAR (fijo abajo) ===== -->
     <LinearLayout
         android:id="@+id/panelPagar"
         android:layout_width="0dp"

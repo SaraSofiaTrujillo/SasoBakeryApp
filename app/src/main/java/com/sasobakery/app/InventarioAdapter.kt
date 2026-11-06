@@ -13,29 +13,25 @@ import androidx.annotation.DrawableRes
 import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 
-// Nivel de stock de un producto. "color" es el color del texto de stock.
 enum class NivelStock(val color: String) {
     DISPONIBLE("#3F7D5A"),
     BAJO("#B7791F"),
     AGOTADO("#C2485F")
 }
 
-// Producto tal como se ve en el inventario del vendedor (incluye stock).
-// Los campos nuevos van al final y tienen valor por defecto, así el código
-// anterior que crea productos con 4 datos sigue funcionando.
 data class ProductoInventario(
     val nombre: String,
     val categoria: String,
-    val precio: Int, // pesos colombianos (COP)
+    val precio: Int,
     val stock: Int,
     @DrawableRes val imagen: Int? = null,
-    val id: Int = 0, // 0 = todavía no guardado
+    val id: Int = 0,
     val descripcion: String = "",
-    val disponible: Boolean = true, // visible en el catálogo
+    val disponible: Boolean = true,
     val porciones: Int = 1,
-    val imagenUri: String? = null // foto elegida de la galería
+    val imagenUri: String? = null
 ) {
-    // Con 5 unidades o menos se considera stock bajo; con 0 está agotado
+
     val nivel: NivelStock
         get() = when {
             stock <= 0 -> NivelStock.AGOTADO
@@ -51,7 +47,6 @@ data class ProductoInventario(
         }
 }
 
-// 68000 -> "68.000"
 private fun formatoPrecio(valor: Int): String =
     String.format(Locale.US, "%,d", valor).replace(",", ".")
 
@@ -84,8 +79,6 @@ class InventarioAdapter(
         holder.tvStock.text = p.textoStock
         holder.tvStock.setTextColor(Color.parseColor(p.nivel.color))
 
-        // Foto: primero la de la galería, luego la del proyecto,
-        // y si no hay ninguna se muestra un icono provisional
         if (p.imagenUri != null) {
             holder.ivFoto.setPadding(0, 0, 0, 0)
             holder.ivFoto.imageTintList = null

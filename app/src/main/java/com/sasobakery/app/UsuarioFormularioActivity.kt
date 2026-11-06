@@ -12,15 +12,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
-// Pantalla "Invitar usuario" / "Editar usuario".
-// Si llega EXTRA_USUARIO_ID se edita ese usuario; si no, se registra uno nuevo.
 class UsuarioFormularioActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_USUARIO_ID = "usuario_id"
     }
 
-    private var rolSeleccionado = Rol.COMPRADOR // el rol con menos permisos va por defecto
+    private var rolSeleccionado = Rol.COMPRADOR
     private var usuarioEditando: Usuario? = null
 
     private lateinit var etNombre: EditText
@@ -32,7 +30,6 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_usuario_formulario)
 
-        // ¿Modo edición? Si el usuario ya no existe, se cierra la pantalla.
         val idEdicion = intent.getIntExtra(EXTRA_USUARIO_ID, -1)
         if (idEdicion >= 0) {
             usuarioEditando = UsuariosRepositorio.obtenerPorId(idEdicion)
@@ -43,7 +40,6 @@ class UsuarioFormularioActivity : AppCompatActivity() {
             }
         }
 
-        // Deja espacio para las barras del sistema y para el teclado
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { vista, insets ->
             val barras = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
@@ -67,7 +63,6 @@ class UsuarioFormularioActivity : AppCompatActivity() {
             }
         }
 
-        // Modo edición: textos propios y datos cargados
         usuarioEditando?.let { u ->
             findViewById<TextView>(R.id.tvTitulo).text = "Editar usuario"
             findViewById<TextView>(R.id.btnRegistrar).text = "Guardar cambios"
@@ -77,7 +72,6 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         }
         actualizarChips()
 
-        // El botón "Listo" del teclado también guarda
         etCorreo.setOnEditorActionListener { _, accion, _ ->
             if (accion == EditorInfo.IME_ACTION_DONE) {
                 guardar()
@@ -91,7 +85,6 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnRegistrar).setOnClickListener { guardar() }
     }
 
-    // Mismo estilo de chips que el filtro de la lista de usuarios
     private fun actualizarChips() {
         chips.forEach { (chip, rol) ->
             if (rol == rolSeleccionado) {
@@ -121,7 +114,6 @@ class UsuarioFormularioActivity : AppCompatActivity() {
 
         val editando = usuarioEditando
 
-        // Al editar, el propio correo del usuario no cuenta como repetido
         if (UsuariosRepositorio.existeCorreo(correo, excluirId = editando?.id)) {
             etCorreo.error = "Ya existe un usuario con este correo"
             etCorreo.requestFocus()
@@ -132,7 +124,6 @@ class UsuarioFormularioActivity : AppCompatActivity() {
             UsuariosRepositorio.agregar(nombre, correo, rolSeleccionado)
             Toast.makeText(this, "Usuario registrado", Toast.LENGTH_SHORT).show()
         } else {
-            // No se puede quitar el rol de administrador al último administrador activo
             if (rolSeleccionado != Rol.ADMINISTRADOR &&
                 UsuariosRepositorio.esUltimoAdminActivo(editando)
             ) {

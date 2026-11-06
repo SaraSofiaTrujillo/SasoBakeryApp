@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-// Lista de pedidos del comprador (historial)
 class MisPedidosAdapter(
     private val onClick: (PedidoGestion) -> Unit
 ) : RecyclerView.Adapter<MisPedidosAdapter.VH>() {

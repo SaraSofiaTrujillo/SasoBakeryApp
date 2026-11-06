@@ -12,8 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
-// Detalle de un producto para el comprador.
-// Recibe el id del producto y lee todo desde InventarioRepositorio (nada inventado).
 class ProductoDetalleActivity : AppCompatActivity() {
 
     companion object {
@@ -21,7 +19,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
     }
 
     private var idProducto = 0
-    private var cantidad = 1 // unidades que se van a agregar con el botón
+    private var cantidad = 1
 
     private lateinit var ivFoto: ImageView
     private lateinit var ivCorazon: ImageView
@@ -40,7 +38,6 @@ class ProductoDetalleActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Si el producto no existe o el vendedor lo ocultó, se cierra la pantalla
         idProducto = intent.getIntExtra(EXTRA_PRODUCTO_ID, 0)
         val producto = InventarioRepositorio.buscarPorId(idProducto)
         if (producto == null || !producto.disponible) {
@@ -72,16 +69,13 @@ class ProductoDetalleActivity : AppCompatActivity() {
         btnMas = findViewById(R.id.btnMas)
         btnAgregarCarrito = findViewById(R.id.btnAgregarCarrito)
 
-        // Volver
         findViewById<View>(R.id.btnAtras).setOnClickListener { finish() }
 
-        // Favorito
         findViewById<View>(R.id.btnFavorito).setOnClickListener {
             FavoritosRepositorio.alternar(idProducto)
             actualizarCorazon()
         }
 
-        // Quitar una unidad
         btnMenos.setOnClickListener {
             if (cantidad > 1) {
                 cantidad--
@@ -89,7 +83,6 @@ class ProductoDetalleActivity : AppCompatActivity() {
             }
         }
 
-        // Sumar una unidad (respetando el stock)
         btnMas.setOnClickListener {
             val p = InventarioRepositorio.buscarPorId(idProducto) ?: return@setOnClickListener
             val agregables = CarritoRepositorio.unidadesAgregables(p.id)
@@ -101,15 +94,11 @@ class ProductoDetalleActivity : AppCompatActivity() {
             }
         }
 
-        // Agregar al carrito
         btnAgregarCarrito.setOnClickListener { agregarAlCarrito() }
 
         actualizarVista()
     }
 
-    // ---------- Pantalla ----------
-
-    /** Dibuja todo el contenido con los datos actuales del producto y del carrito. */
     private fun actualizarVista() {
         val p = InventarioRepositorio.buscarPorId(idProducto)
         if (p == null) {
@@ -117,20 +106,17 @@ class ProductoDetalleActivity : AppCompatActivity() {
             return
         }
 
-        // Foto: la del vendedor o el ícono lila si todavía no tiene
         ivFoto.mostrarFotoProducto(p, 80)
         val sinFoto = p.imagenUri == null && p.imagen == null
         ivFoto.scaleType =
             if (sinFoto) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP
 
-        // Textos del producto
         tvCategoria.text = p.categoria.uppercase()
         tvNombre.text = p.nombre
         tvDescripcion.text = p.descripcion
         tvDescripcion.visibility = if (p.descripcion.isBlank()) View.GONE else View.VISIBLE
         tvPorciones.text = if (p.porciones == 1) "1 porción" else "${p.porciones} porciones"
 
-        // Disponibilidad
         tvStockEstado.text = when (p.nivel) {
             NivelStock.DISPONIBLE -> p.textoStock
             NivelStock.BAJO -> "${p.textoStock} · pocas unidades"
@@ -139,10 +125,8 @@ class ProductoDetalleActivity : AppCompatActivity() {
         tvStockEstado.setTextColor(Color.parseColor(p.nivel.color))
         tvAgotado.visibility = if (p.nivel == NivelStock.AGOTADO) View.VISIBLE else View.GONE
 
-        // Corazón
         actualizarCorazon()
 
-        // Cuántas unidades ya tiene el comprador en el carrito
         val enCarrito = CarritoRepositorio.cantidadDe(p.id)
         if (enCarrito > 0) {
             tvEnCarrito.visibility = View.VISIBLE
@@ -152,14 +136,12 @@ class ProductoDetalleActivity : AppCompatActivity() {
             tvEnCarrito.visibility = View.GONE
         }
 
-        // Cantidad: nunca más que las unidades que todavía se pueden agregar
         val agregables = CarritoRepositorio.unidadesAgregables(p.id)
         cantidad = if (agregables == 0) 0 else cantidad.coerceIn(1, agregables)
         tvCantidad.text = cantidad.toString()
         btnMenos.alpha = if (cantidad > 1) 1f else 0.35f
         btnMas.alpha = if (cantidad in 1 until agregables) 1f else 0.35f
 
-        // Botón principal
         if (agregables == 0) {
             btnAgregarCarrito.text =
                 if (p.stock <= 0) "Agotado" else "Ya tienes todo el stock en tu carrito"
@@ -181,7 +163,6 @@ class ProductoDetalleActivity : AppCompatActivity() {
         )
     }
 
-    // ---------- Carrito ----------
 
     private fun agregarAlCarrito() {
         val p = InventarioRepositorio.buscarPorId(idProducto) ?: return
@@ -202,7 +183,6 @@ class ProductoDetalleActivity : AppCompatActivity() {
         }
     }
 
-    // ---------- Utilidades ----------
 
     private fun mensajeLimite(p: ProductoInventario): String =
         if (p.stock <= 0) "${p.nombre} está agotado"

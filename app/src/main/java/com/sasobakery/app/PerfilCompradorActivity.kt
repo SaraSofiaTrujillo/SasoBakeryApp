@@ -19,8 +19,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-// Perfil e historial del comprador.
-// No guarda datos propios: lee de los repositorios que ya existen.
 class PerfilCompradorActivity : AppCompatActivity() {
 
     private lateinit var tvIniciales: TextView
@@ -54,25 +52,20 @@ class PerfilCompradorActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnEditarPerfil).setOnClickListener { mostrarEditar() }
 
-        // Menú inferior: Perfil ya es esta pantalla
         findViewById<View>(R.id.navInicio).setOnClickListener { irAlCatalogo() }
         findViewById<View>(R.id.navCategorias).setOnClickListener { irAlCatalogo() }
         findViewById<View>(R.id.navCarrito).setOnClickListener { irAlCarrito() }
     }
 
-    // Cada vez que se vuelve a esta pantalla se leen de nuevo los datos
     override fun onResume() {
         super.onResume()
         mostrarPerfil()
     }
 
-    // ---------- Filas del menú ----------
-
     private fun crearFilas() {
         val actividad = findViewById<LinearLayout>(R.id.layoutActividad)
         val opciones = findViewById<LinearLayout>(R.id.layoutOpciones)
 
-        // Mi actividad
         val filaPedidos = agregarFila(
             actividad, R.drawable.ic_bag, "Mis pedidos", "Revisa y sigue tus compras"
         ) { startActivity(Intent(this, MisPedidosCompradorActivity::class.java)) }
@@ -89,7 +82,6 @@ class PerfilCompradorActivity : AppCompatActivity() {
         ) { mostrarDireccion() }
         tvSubDirecciones = filaDirecciones.findViewById(R.id.tvSub)
 
-        // Más opciones
         agregarFila(opciones, R.drawable.ic_card, "Métodos de pago") { mostrarMetodosPago() }
         agregarDivisor(opciones)
         agregarFila(opciones, R.drawable.ic_bell, "Notificaciones") { mostrarNotificaciones() }
@@ -104,7 +96,6 @@ class PerfilCompradorActivity : AppCompatActivity() {
         ) { confirmarCerrarSesion() }
     }
 
-    /** Crea una fila con item_perfil_opcion, la agrega al contenedor y la devuelve. */
     private fun agregarFila(
         contenedor: LinearLayout,
         icono: Int,
@@ -123,7 +114,6 @@ class PerfilCompradorActivity : AppCompatActivity() {
         tvTitulo.text = titulo
         if (subtitulo.isEmpty()) tvSub.visibility = View.GONE else tvSub.text = subtitulo
 
-        // "Cerrar sesión" va en rosa
         if (peligro) {
             tvTitulo.setTextColor(0xFFC2485F.toInt())
             ivIcono.imageTintList = ColorStateList.valueOf(0xFFC2485F.toInt())
@@ -142,8 +132,6 @@ class PerfilCompradorActivity : AppCompatActivity() {
         contenedor.addView(linea)
     }
 
-    // ---------- Datos en pantalla ----------
-
     private fun mostrarPerfil() {
         val p = PerfilCompradorRepositorio.obtener()
         tvIniciales.text = p.iniciales
@@ -153,12 +141,10 @@ class PerfilCompradorActivity : AppCompatActivity() {
         tvPedidos.text = PerfilCompradorRepositorio.misPedidos().size.toString()
         tvPuntos.text = PerfilCompradorRepositorio.puntos().toString()
 
-        // "1 activo" / "2 activos" (se oculta si no hay)
         val activos = PerfilCompradorRepositorio.pedidosActivos()
         tvBadgePedidos.visibility = if (activos > 0) View.VISIBLE else View.GONE
         tvBadgePedidos.text = if (activos == 1) "1 activo" else "$activos activos"
 
-        // Dirección guardada (la misma que se usa al comprar)
         tvSubDirecciones.text = if (EntregaRepositorio.tieneDireccion()) {
             "${EntregaRepositorio.etiquetaDireccion} · ${EntregaRepositorio.direccion}"
         } else {
@@ -167,13 +153,10 @@ class PerfilCompradorActivity : AppCompatActivity() {
 
         actualizarTextoHuella()
 
-        // Globito del carrito
         val total = CarritoRepositorio.cantidadTotal()
         tvBadgeNav.visibility = if (total == 0) View.GONE else View.VISIBLE
         tvBadgeNav.text = if (total > 9) "9+" else total.toString()
     }
-
-    // ---------- Editar perfil ----------
 
     private fun mostrarEditar() {
         val actual = PerfilCompradorRepositorio.obtener()
@@ -201,8 +184,6 @@ class PerfilCompradorActivity : AppCompatActivity() {
 
         abrirHoja(dialogo, vista)
     }
-
-    // ---------- Direcciones (misma dirección y mismo formulario de Entrega) ----------
 
     private fun mostrarDireccion() {
         val dialogo = BottomSheetDialog(this)
@@ -234,7 +215,6 @@ class PerfilCompradorActivity : AppCompatActivity() {
         abrirHoja(dialogo, vista)
     }
 
-    /** Abre la hoja completa y evita que el teclado tape los campos. */
     private fun abrirHoja(dialogo: BottomSheetDialog, vista: View) {
         dialogo.setContentView(vista)
         dialogo.behavior.state = BottomSheetBehavior.STATE_EXPANDED
@@ -242,8 +222,6 @@ class PerfilCompradorActivity : AppCompatActivity() {
         dialogo.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         dialogo.show()
     }
-
-    // ---------- Más opciones ----------
 
     private fun mostrarMetodosPago() {
         val texto = PagoRepositorio.metodos().joinToString("\n\n") { "${it.titulo}\n${it.detalle}" }
@@ -278,13 +256,11 @@ class PerfilCompradorActivity : AppCompatActivity() {
             .show()
     }
 
-    // Va a la selección de rol y borra el historial (Atrás no regresa al perfil)
     private fun cerrarSesion() {
         val intent = Intent(this, LoginActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)
     }
-    // ---------- Acceso con huella ----------
 
     private fun actualizarTextoHuella() {
         val correo = PerfilCompradorRepositorio.obtener().correo
@@ -296,7 +272,6 @@ class PerfilCompradorActivity : AppCompatActivity() {
         }
     }
 
-    // Activa o desactiva la huella según el estado actual
     private fun gestionarHuella() {
         val correo = PerfilCompradorRepositorio.obtener().correo
 
@@ -334,9 +309,6 @@ class PerfilCompradorActivity : AppCompatActivity() {
                 mensaje("La biometría no está disponible ahora. Intenta más tarde.")
         }
     }
-    // ---------- Navegación ----------
-
-    // Vuelve al catálogo que ya estaba abierto (no abre uno nuevo encima)
     private fun irAlCatalogo() {
         val intent = Intent(this, CatalogoCompradorActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)

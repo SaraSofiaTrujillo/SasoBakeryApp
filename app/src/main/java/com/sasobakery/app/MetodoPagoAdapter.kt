@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-// Lista de opciones de pago. La elegida lleva borde morado y un check.
 class MetodoPagoAdapter(
     private val onClick: (MetodoPago) -> Unit
 ) : RecyclerView.Adapter<MetodoPagoAdapter.VH>() {
@@ -39,12 +38,10 @@ class MetodoPagoAdapter(
         holder.tvTitulo.text = m.titulo
         holder.tvDetalle.text = m.detalle
 
-        // Tarjeta: borde morado si está elegida
         holder.itemView.setBackgroundResource(
             if (elegido) R.drawable.bg_entrega_opcion_seleccionada else R.drawable.bg_users_input
         )
 
-        // Círculo de la derecha: relleno morado con check si está elegida
         if (elegido) {
             holder.tvRadio.setBackgroundResource(R.drawable.bg_users_avatar)
             holder.tvRadio.backgroundTintList = ColorStateList.valueOf(0xFF7B5EA7.toInt())

@@ -11,7 +11,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-// Carrito del comprador. Todo sale de CarritoRepositorio (nada duplicado).
 class CarritoCompradorActivity : AppCompatActivity() {
 
     private var modoEdicion = false
@@ -56,13 +55,11 @@ class CarritoCompradorActivity : AppCompatActivity() {
         rvCarrito.layoutManager = LinearLayoutManager(this)
         rvCarrito.adapter = adapter
 
-        // Editar / Listo
         btnEditar.setOnClickListener {
             modoEdicion = !modoEdicion
             refrescar()
         }
 
-        // Todavía sin pantalla
         findViewById<View>(R.id.btnCupon).setOnClickListener { mensaje("Próximamente") }
         findViewById<View>(R.id.btnContinuar).setOnClickListener {
             startActivity(android.content.Intent(this, EntregaCompradorActivity::class.java))
@@ -71,19 +68,15 @@ class CarritoCompradorActivity : AppCompatActivity() {
             startActivity(android.content.Intent(this, PerfilCompradorActivity::class.java))
         }
 
-        // Volver al catálogo
         findViewById<View>(R.id.btnVerProductos).setOnClickListener { finish() }
         findViewById<View>(R.id.navInicio).setOnClickListener { finish() }
         findViewById<View>(R.id.navCategorias).setOnClickListener { finish() }
-        // navCarrito: ya estamos en el carrito, no hace nada
     }
 
     override fun onResume() {
         super.onResume()
         refrescar()
     }
-
-    // ---------- Acciones sobre los productos ----------
 
     private fun sumar(p: ProductoInventario) {
         when (CarritoRepositorio.agregar(p.id)) {
@@ -108,9 +101,6 @@ class CarritoCompradorActivity : AppCompatActivity() {
         refrescar()
     }
 
-    // ---------- Pantalla ----------
-
-    /** Vuelve a dibujar todo con lo que haya en el carrito en este momento. */
     private fun refrescar() {
         val items = CarritoRepositorio.obtenerItems()
         val vacio = items.isEmpty()
@@ -118,7 +108,6 @@ class CarritoCompradorActivity : AppCompatActivity() {
 
         adapter.submit(items, modoEdicion)
 
-        // Qué se ve según haya o no productos
         val conProductos = if (vacio) View.GONE else View.VISIBLE
         bannerReserva.visibility = conProductos
         rvCarrito.visibility = conProductos
@@ -128,12 +117,10 @@ class CarritoCompradorActivity : AppCompatActivity() {
         btnEditar.visibility = if (vacio) View.INVISIBLE else View.VISIBLE
         btnEditar.text = if (modoEdicion) "Listo" else "Editar"
 
-        // Totales en pesos colombianos
         val total = CarritoRepositorio.total()
         tvSubtotal.text = formatearCop(total)
         tvTotal.text = formatearCop(total)
 
-        // Globito del menú inferior
         val unidades = CarritoRepositorio.cantidadTotal()
         tvBadgeNav.visibility = if (unidades == 0) View.GONE else View.VISIBLE
         tvBadgeNav.text = if (unidades > 9) "9+" else unidades.toString()

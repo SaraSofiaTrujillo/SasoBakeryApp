@@ -19,7 +19,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- ===== ZONA LILA: logo y frase ===== -->
             <FrameLayout
                 android:id="@+id/headerLogin"
                 android:layout_width="match_parent"
@@ -27,7 +26,6 @@
                 android:paddingTop="36dp"
                 android:paddingBottom="44dp">
 
-                <!-- Círculos decorativos -->
                 <View
                     android:layout_width="130dp"
                     android:layout_height="130dp"
@@ -93,7 +91,6 @@
                 </LinearLayout>
             </FrameLayout>
 
-            <!-- ===== PANEL BLANCO: formulario ===== -->
             <LinearLayout
                 android:id="@+id/panelLogin"
                 android:layout_width="match_parent"
@@ -123,7 +120,6 @@
                     android:textColor="#8A8494"
                     android:textSize="12sp" />
 
-                <!-- Correo -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -149,7 +145,6 @@
                     android:textColorHint="#8A8494"
                     android:textSize="13sp" />
 
-                <!-- Contraseña -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -212,7 +207,6 @@
                     android:textColor="#7B5EA7"
                     android:textSize="11sp" />
 
-                <!-- Botón principal -->
                 <TextView
                     android:id="@+id/btnIniciar"
                     android:layout_width="match_parent"
@@ -226,7 +220,6 @@
                     android:textColor="#FFFFFF"
                     android:textSize="14sp"
                     android:textStyle="bold" />
-                <!-- Acceso con huella: solo se ve si ya está activado en este celular -->
                 <LinearLayout
                     android:id="@+id/bloqueBiometria"
                     android:layout_width="match_parent"
@@ -283,7 +276,6 @@
                         android:textColor="#7B5EA7"
                         android:textSize="11sp" />
                 </LinearLayout>
-                <!-- o continúa con -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -327,7 +319,6 @@
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <!-- Registro -->
                 <TextView
                     android:id="@+id/btnRegistro"
                     android:layout_width="wrap_content"
@@ -342,7 +333,6 @@
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
-                <!-- Acceso de pruebas -->
                 <TextView
                     android:id="@+id/btnElegirRol"
                     android:layout_width="wrap_content"

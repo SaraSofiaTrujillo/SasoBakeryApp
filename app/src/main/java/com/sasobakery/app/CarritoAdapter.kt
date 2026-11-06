@@ -8,7 +8,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-// Lista de productos del carrito. Los botones avisan a la pantalla qué se tocó.
 class CarritoAdapter(
     private val onMas: (ProductoInventario) -> Unit,
     private val onMenos: (ProductoInventario) -> Unit,
@@ -51,10 +50,8 @@ class CarritoAdapter(
         }
         holder.tvCantidad.text = item.cantidad.toString()
 
-        // El "+" se ve apagado cuando ya no hay más unidades disponibles
         holder.btnMas.alpha = if (CarritoRepositorio.unidadesAgregables(p.id) > 0) 1f else 0.35f
 
-        // El botón "Quitar" solo aparece en modo Editar
         holder.btnQuitar.visibility = if (modoEdicion) View.VISIBLE else View.GONE
 
         holder.btnMas.setOnClickListener { onMas(p) }

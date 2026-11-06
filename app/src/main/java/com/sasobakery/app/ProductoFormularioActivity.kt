@@ -24,11 +24,9 @@ import java.io.FileOutputStream
 class ProductoFormularioActivity : AppCompatActivity() {
 
     companion object {
-        // Clave para enviar el id del producto a editar (si no se envía, es un producto nuevo)
         const val EXTRA_PRODUCTO_ID = "producto_id"
     }
 
-    // Opciones del selector de porciones
     private val opcionesPorciones = listOf(1, 2, 4, 6, 8, 10, 12, 16, 20)
 
     private var productoId = 0 // 0 = producto nuevo
@@ -46,7 +44,6 @@ class ProductoFormularioActivity : AppCompatActivity() {
     private lateinit var etStock: EditText
     private lateinit var tvPorciones: TextView
 
-    // Abre la galería y devuelve la foto elegida
     private val elegirFoto = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             val guardada = copiarFoto(uri)
@@ -64,7 +61,6 @@ class ProductoFormularioActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_producto_formulario)
 
-        // Deja espacio para las barras del sistema y para el teclado
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { vista, insets ->
             val barras = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
@@ -84,7 +80,6 @@ class ProductoFormularioActivity : AppCompatActivity() {
 
         colorearInterruptor()
 
-        // ¿Editar o crear?
         productoId = intent.getIntExtra(EXTRA_PRODUCTO_ID, 0)
         productoOriginal = InventarioRepositorio.buscarPorId(productoId)
         if (productoOriginal != null) {
@@ -95,7 +90,6 @@ class ProductoFormularioActivity : AppCompatActivity() {
         }
         mostrarFoto()
 
-        // Botones
         findViewById<View>(R.id.btnVolver).setOnClickListener { finish() }
         findViewById<View>(R.id.btnGuardarTop).setOnClickListener { guardar() }
         findViewById<View>(R.id.btnGuardar).setOnClickListener { guardar() }
@@ -103,8 +97,6 @@ class ProductoFormularioActivity : AppCompatActivity() {
         tvCategoria.setOnClickListener { mostrarMenuCategorias() }
         tvPorciones.setOnClickListener { mostrarMenuPorciones() }
     }
-
-    // ---------- Preparar la pantalla ----------
 
     private fun llenarCampos(p: ProductoInventario) {
         findViewById<TextView>(R.id.tvTitulo).text = "Editar producto"
@@ -133,7 +125,6 @@ class ProductoFormularioActivity : AppCompatActivity() {
         tvPorciones.text = textoPorciones(porcionesActual)
     }
 
-    // Interruptor morado con bolita blanca (como el mockup)
     private fun colorearInterruptor() {
         val estados = arrayOf(
             intArrayOf(android.R.attr.state_checked),
@@ -149,7 +140,6 @@ class ProductoFormularioActivity : AppCompatActivity() {
         )
     }
 
-    // ---------- Foto ----------
 
     private fun mostrarFoto() {
         val uri = imagenUri ?: productoOriginal?.imagenUri
@@ -176,8 +166,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
         }
     }
 
-    // Copia la foto de la galería a la memoria de la app, reducida (máx. 1024 px),
-    // para que se vea bien en el inventario y no pese demasiado.
+
     private fun copiarFoto(uri: Uri): String? {
         return try {
             val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -201,7 +190,6 @@ class ProductoFormularioActivity : AppCompatActivity() {
         }
     }
 
-    // ---------- Menús desplegables ----------
 
     private fun mostrarMenuCategorias() {
         val menu = PopupMenu(this, tvCategoria)
@@ -235,7 +223,6 @@ class ProductoFormularioActivity : AppCompatActivity() {
     private fun textoPorciones(cantidad: Int): String =
         if (cantidad == 1) "1 porción" else "$cantidad porciones"
 
-    // ---------- Guardar ----------
 
     private fun guardar() {
         val nombre = etNombre.text.toString().trim()

@@ -11,8 +11,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-// Productos que el comprador marcó con el corazón.
-// Usa las mismas tarjetas del catálogo (CatalogoAdapter).
 class FavoritosCompradorActivity : AppCompatActivity() {
 
     private val adapter = CatalogoAdapter(
@@ -42,8 +40,6 @@ class FavoritosCompradorActivity : AppCompatActivity() {
         rv.adapter = adapter
     }
 
-    // Al volver se leen de nuevo (por si se quitó un favorito o el vendedor cambió algo).
-    // Solo salen productos disponibles, igual que en el catálogo.
     override fun onResume() {
         super.onResume()
         val lista = InventarioRepositorio.obtenerCatalogo()

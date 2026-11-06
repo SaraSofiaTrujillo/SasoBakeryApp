@@ -9,7 +9,6 @@
     android:background="#FDFBFF"
     tools:context=".VendedorPrincipalActivity">
 
-    <!-- ===== CONTENIDO CON SCROLL ===== -->
     <ScrollView
         android:id="@+id/scrollVendedor"
         android:layout_width="0dp"
@@ -30,7 +29,6 @@
             android:paddingEnd="20dp"
             android:paddingBottom="20dp">
 
-            <!-- Encabezado -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -94,14 +92,12 @@
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
-            <!-- Tarjetas: fila 1 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
                 android:orientation="horizontal">
 
-                <!-- Pedidos hoy -->
                 <FrameLayout
                     android:layout_width="0dp"
                     android:layout_height="92dp"
@@ -150,7 +146,6 @@
                         app:autoSizeTextType="uniform" />
                 </FrameLayout>
 
-                <!-- Por preparar -->
                 <FrameLayout
                     android:layout_width="0dp"
                     android:layout_height="92dp"
@@ -199,14 +194,12 @@
                 </FrameLayout>
             </LinearLayout>
 
-            <!-- Tarjetas: fila 2 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:orientation="horizontal">
 
-                <!-- Stock bajo -->
                 <FrameLayout
                     android:layout_width="0dp"
                     android:layout_height="92dp"
@@ -255,7 +248,6 @@
                         app:autoSizeTextType="uniform" />
                 </FrameLayout>
 
-                <!-- Ventas hoy -->
                 <FrameLayout
                     android:layout_width="0dp"
                     android:layout_height="92dp"
@@ -304,7 +296,6 @@
                 </FrameLayout>
             </LinearLayout>
 
-            <!-- Pedidos en curso -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -342,7 +333,6 @@
                 android:background="@drawable/bg_users_input"
                 android:orientation="vertical" />
 
-            <!-- Acciones rápidas -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -418,7 +408,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ===== MENÚ INFERIOR (Resumen activo) ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"

@@ -15,9 +15,6 @@ import androidx.recyclerview.widget.RecyclerView
 
 class ProductosCategoriasActivity : AppCompatActivity() {
 
-    // Datos de ejemplo en pesos colombianos (luego vendrán de la base de datos).
-    // Para usar una foto: copia el PNG a res/drawable (ej. prod_torta_aurora.png)
-    // y agrega: imagen = R.drawable.prod_torta_aurora
     private val productos = listOf(
         Producto("Torta Aurora", "Tortas", 68000, EstadoProducto.ACTIVO),
         Producto("Cheesecake fresa", "Postres", 28000, EstadoProducto.ACTIVO),
@@ -46,15 +43,12 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         etBuscar = findViewById(R.id.etBuscar)
         etBuscar.doAfterTextChanged { aplicarFiltro() }
 
-        // Botones que aún no tienen pantalla
         findViewById<View>(R.id.btnMenu).setOnClickListener { proximamente() }
         findViewById<View>(R.id.btnCrear).setOnClickListener { proximamente() }
 
-        // Pestaña Categorías y "Gestionar categorías" abren la pantalla de categorías
         findViewById<View>(R.id.tabCategorias).setOnClickListener { abrirCategorias() }
         findViewById<View>(R.id.btnGestionarCategorias).setOnClickListener { abrirCategorias() }
 
-        // Menú inferior
         findViewById<View>(R.id.navPedidos).setOnClickListener {
             startActivity(Intent(this, PedidosActivity::class.java))
             finish()

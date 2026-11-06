@@ -21,12 +21,11 @@ data class Usuario(
     val correo: String,
     val rol: Rol,
     val id: Int = 0,
-    val activo: Boolean = true   // false = cuenta desactivada
+    val activo: Boolean = true
 )
 
 class UsuariosAdapter(
     private var items: List<Usuario> = emptyList(),
-    // Se llama al tocar los tres puntos: recibe el usuario y la vista donde anclar el menú
     private val alTocarMas: (Usuario, View) -> Unit = { _, _ -> }
 ) : RecyclerView.Adapter<UsuariosAdapter.VH>() {
 
@@ -54,7 +53,6 @@ class UsuariosAdapter(
         holder.tvCorreo.text = u.correo
         holder.tvRol.text = u.rol.etiqueta
 
-        // Colores de la etiqueta según el rol: fondo a texto
         val (fondo, texto) = when (u.rol) {
             Rol.COMPRADOR -> "#EFEAF5" to "#6B5B84"
             Rol.VENDEDOR -> "#FBE0E5" to "#C2485F"
@@ -63,7 +61,6 @@ class UsuariosAdapter(
         holder.tvRol.backgroundTintList = ColorStateList.valueOf(Color.parseColor(fondo))
         holder.tvRol.setTextColor(Color.parseColor(texto))
 
-        // Usuario desactivado: se ve atenuado y con aviso (los tres puntos siguen activos)
         val alfa = if (u.activo) 1f else 0.5f
         holder.tvIniciales.alpha = alfa
         holder.tvNombre.alpha = alfa

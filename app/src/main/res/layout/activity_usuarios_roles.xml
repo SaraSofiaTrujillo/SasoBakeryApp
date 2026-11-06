@@ -9,7 +9,6 @@
     android:background="#FDFBFF"
     tools:context=".UsuariosRolesActivity">
 
-    <!-- ===== ENCABEZADO ===== -->
     <ImageView
         android:id="@+id/ivLogo"
         android:layout_width="40dp"
@@ -59,7 +58,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/ivLogo" />
 
-    <!-- ===== TARJETA DE ESTADÍSTICAS ===== -->
     <LinearLayout
         android:id="@+id/cardStats"
         android:layout_width="0dp"
@@ -159,7 +157,6 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- ===== BUSCADOR + FILTRO ===== -->
     <LinearLayout
         android:id="@+id/rowSearch"
         android:layout_width="0dp"
@@ -225,7 +222,6 @@
         </FrameLayout>
     </LinearLayout>
 
-    <!-- ===== CHIPS DE ROL ===== -->
     <HorizontalScrollView
         android:id="@+id/chipsScroll"
         android:layout_width="0dp"
@@ -295,7 +291,6 @@
         </LinearLayout>
     </HorizontalScrollView>
 
-    <!-- ===== LISTA ===== -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvUsuarios"
         android:layout_width="0dp"
@@ -310,7 +305,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/chipsScroll" />
 
-    <!-- ===== MENÚ INFERIOR (Más activo) ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"

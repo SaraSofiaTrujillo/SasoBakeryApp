@@ -17,20 +17,16 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 
-// Recuperación de contraseña, en 4 pasos dentro de la misma pantalla:
-// 1) correo  2) código  3) nueva contraseña  4) listo.
-// Todo lo que en el futuro hará el servidor está en RecuperacionClaveRepositorio.
 class RecuperarClaveActivity : AppCompatActivity() {
 
     companion object {
-        // El login envía el correo que ya escribió el comprador
         const val EXTRA_CORREO = "correo"
     }
 
     private enum class Paso { CORREO, CODIGO, NUEVA_CLAVE, LISTO }
 
     private var paso = Paso.CORREO
-    private var correo = "" // correo con el que se está recuperando la contraseña
+    private var correo = ""
     private var temporizador: CountDownTimer? = null
 
     private lateinit var btnAtras: View
@@ -47,8 +43,6 @@ class RecuperarClaveActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_recuperar_clave)
 
-        // Misma lógica de márgenes del login: lila hasta arriba, panel blanco hasta
-        // abajo, y el teclado empuja el contenido para no tapar los campos.
         val cabecera = findViewById<View>(R.id.headerRecuperar)
         val panel = findViewById<View>(R.id.panelRecuperar)
         val baseArriba = cabecera.paddingTop
@@ -76,17 +70,14 @@ class RecuperarClaveActivity : AppCompatActivity() {
         tvCorreoEnviado = findViewById(R.id.tvCorreoEnviado)
         tvReenviar = findViewById(R.id.tvReenviar)
 
-        // Si el comprador ya había escrito su correo en el login, se reutiliza
         etCorreo.setText(intent.getStringExtra(EXTRA_CORREO).orEmpty())
 
-        // ----- Paso 1: correo -----
         findViewById<View>(R.id.btnEnviarCodigo).setOnClickListener { enviarCodigo() }
         etCorreo.setOnEditorActionListener { _, accion, _ ->
             if (accion == EditorInfo.IME_ACTION_DONE) { enviarCodigo(); true } else false
         }
         findViewById<View>(R.id.btnVolverLogin).setOnClickListener { finish() }
 
-        // ----- Paso 2: código -----
         findViewById<View>(R.id.btnVerificarCodigo).setOnClickListener { verificarCodigo() }
         etCodigo.setOnEditorActionListener { _, accion, _ ->
             if (accion == EditorInfo.IME_ACTION_DONE) { verificarCodigo(); true } else false
@@ -94,7 +85,6 @@ class RecuperarClaveActivity : AppCompatActivity() {
         tvReenviar.setOnClickListener { reenviarCodigo() }
         findViewById<View>(R.id.btnCambiarCorreo).setOnClickListener { mostrarPaso(Paso.CORREO) }
 
-        // ----- Paso 3: nueva contraseña -----
         val btnMostrarNueva = findViewById<TextView>(R.id.btnMostrarNueva)
         val btnMostrarConfirmar = findViewById<TextView>(R.id.btnMostrarConfirmar)
         btnMostrarNueva.setOnClickListener { etClaveNueva.alternarVisibilidadClave(btnMostrarNueva) }
@@ -106,10 +96,8 @@ class RecuperarClaveActivity : AppCompatActivity() {
             if (accion == EditorInfo.IME_ACTION_DONE) { guardarClave(); true } else false
         }
 
-        // ----- Paso 4: listo -----
         findViewById<View>(R.id.btnIrLogin).setOnClickListener { finish() }
 
-        // Volver (flecha de la pantalla y botón Atrás del celular)
         btnAtras.setOnClickListener { atras() }
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = atras()
@@ -118,25 +106,20 @@ class RecuperarClaveActivity : AppCompatActivity() {
         mostrarPaso(Paso.CORREO)
     }
 
-    // ---------- Pasos ----------
 
     private fun mostrarPaso(nuevo: Paso) {
         paso = nuevo
         pasos.forEach { (clave, vista) ->
             vista.visibility = if (clave == nuevo) View.VISIBLE else View.GONE
         }
-        // En el paso final ya no tiene sentido volver atrás
         btnAtras.visibility = if (nuevo == Paso.LISTO) View.INVISIBLE else View.VISIBLE
         if (nuevo != Paso.CODIGO) temporizador?.cancel()
         ocultarTeclado()
     }
 
-    // Del paso del código se vuelve al correo; de los demás se sale a la pantalla anterior
     private fun atras() {
         if (paso == Paso.CODIGO) mostrarPaso(Paso.CORREO) else finish()
     }
-
-    // ---------- Paso 1: pedir el código ----------
 
     private fun enviarCodigo() {
         val escrito = etCorreo.text.toString().trim().lowercase()
@@ -152,8 +135,6 @@ class RecuperarClaveActivity : AppCompatActivity() {
         }
 
         correo = escrito
-        // BACKEND: aquí se pide el envío del código (al responder se pasa de paso).
-        // Con el servicio real, mostrar "Enviando…" en el botón mientras responde.
         RecuperacionClaveRepositorio.solicitarCodigo(correo)
 
         // Mensaje neutro: no dice si el correo existe o no (así se protege a los usuarios)
@@ -166,8 +147,6 @@ class RecuperarClaveActivity : AppCompatActivity() {
         iniciarConteoReenvio()
     }
 
-    // ---------- Paso 2: comprobar el código ----------
-
     private fun verificarCodigo() {
         val codigo = etCodigo.text.toString().trim()
         if (codigo.length != RecuperacionClaveRepositorio.LARGO_CODIGO) {
@@ -176,7 +155,6 @@ class RecuperarClaveActivity : AppCompatActivity() {
             return
         }
 
-        // BACKEND: aquí se valida el código en el servidor
         when (RecuperacionClaveRepositorio.verificarCodigo(correo, codigo)) {
             ResultadoCodigo.CORRECTO -> {
                 etClaveNueva.text.clear()
@@ -196,14 +174,13 @@ class RecuperarClaveActivity : AppCompatActivity() {
 
     private fun reenviarCodigo() {
         if (!tvReenviar.isEnabled) return
-        RecuperacionClaveRepositorio.solicitarCodigo(correo) // BACKEND: nuevo envío
+        RecuperacionClaveRepositorio.solicitarCodigo(correo)
         etCodigo.text.clear()
         etCodigo.error = null
         mensaje("Te enviamos un nuevo código")
         iniciarConteoReenvio()
     }
 
-    // "Reenviar" se activa después de unos segundos para evitar envíos seguidos
     private fun iniciarConteoReenvio() {
         temporizador?.cancel()
         tvReenviar.isEnabled = false
@@ -223,8 +200,6 @@ class RecuperarClaveActivity : AppCompatActivity() {
         }.start()
     }
 
-    // ---------- Paso 3: guardar la nueva contraseña ----------
-
     private fun guardarClave() {
         val nueva = etClaveNueva.text.toString()
         val confirmar = etClaveConfirmar.text.toString()
@@ -240,7 +215,6 @@ class RecuperarClaveActivity : AppCompatActivity() {
             return
         }
 
-        // BACKEND: aquí se guarda la contraseña nueva (cifrada) en el servidor
         if (RecuperacionClaveRepositorio.cambiarClave(correo, nueva)) {
             mostrarPaso(Paso.LISTO)
         } else {
@@ -249,9 +223,6 @@ class RecuperarClaveActivity : AppCompatActivity() {
         }
     }
 
-    // ---------- Utilidades ----------
-
-    // "valentina.mendoza@gmail.com" -> "va***@gmail.com"
     private fun enmascarar(correo: String): String {
         val arroba = correo.indexOf('@')
         if (arroba <= 0) return correo

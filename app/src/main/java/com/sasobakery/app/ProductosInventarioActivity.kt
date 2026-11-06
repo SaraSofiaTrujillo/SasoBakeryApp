@@ -15,7 +15,6 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-// Filtro por estado de stock (se elige con el botón de filtro o el aviso amarillo)
 enum class FiltroStock(val etiqueta: String) {
     TODOS("Todos los estados"),
     BAJO("Stock bajo"),
@@ -24,12 +23,8 @@ enum class FiltroStock(val etiqueta: String) {
 
 class ProductosInventarioActivity : AppCompatActivity() {
 
-    // Los productos viven en InventarioRepositorio (datos de ejemplo en memoria,
-    // luego vendrán de la base de datos). Se vuelven a leer cada vez que
-    // se regresa a esta pantalla (ver onResume).
     private var productos: List<ProductoInventario> = InventarioRepositorio.obtenerTodos()
 
-    // Tocar el botón "⋯" de un producto abre el formulario para editarlo
     private val adapter = InventarioAdapter { producto -> abrirFormulario(producto.id) }
     private var categoriaActual: String? = null // null = Todos
     private var filtroStock = FiltroStock.TODOS
@@ -78,19 +73,15 @@ class ProductosInventarioActivity : AppCompatActivity() {
             }
         }
 
-        // Botón de filtro: menú con los estados de stock
         btnFiltro.setOnClickListener { mostrarMenuFiltro() }
 
-        // Aviso amarillo: filtra por stock bajo
         bannerStockBajo.setOnClickListener {
             filtroStock = FiltroStock.BAJO
             refrescar()
         }
 
-        // Botón "Nuevo": abre el formulario vacío para crear un producto
         findViewById<View>(R.id.btnNuevo).setOnClickListener { abrirFormulario(0) }
 
-        // Menú inferior: Productos ya es esta pantalla
         findViewById<View>(R.id.navResumen).setOnClickListener { finish() }
         findViewById<View>(R.id.navPedidos).setOnClickListener { proximamente() }
         findViewById<View>(R.id.navMas).setOnClickListener { proximamente() }
@@ -98,21 +89,18 @@ class ProductosInventarioActivity : AppCompatActivity() {
         refrescar()
     }
 
-    // Al volver del formulario, se leen de nuevo los productos para ver los cambios
     override fun onResume() {
         super.onResume()
         productos = InventarioRepositorio.obtenerTodos()
         refrescar()
     }
 
-    // id = 0 -> producto nuevo; otro número -> editar ese producto
     private fun abrirFormulario(id: Int) {
         val intent = Intent(this, ProductoFormularioActivity::class.java)
         intent.putExtra(ProductoFormularioActivity.EXTRA_PRODUCTO_ID, id)
         startActivity(intent)
     }
 
-    // ---------- Filtros ----------
 
     private fun cumpleStock(p: ProductoInventario): Boolean = when (filtroStock) {
         FiltroStock.TODOS -> true
@@ -134,11 +122,8 @@ class ProductosInventarioActivity : AppCompatActivity() {
         menu.show()
     }
 
-    // ---------- Actualización de pantalla ----------
-
-    /** Recalcula chips, aviso, botón de filtro y la lista visible. */
     private fun refrescar() {
-        // Chips: texto con contador y estilo (seleccionado o no)
+
         chips.forEach { (chip, categoria) ->
             val cantidad = if (categoria == null) {
                 productos.size
@@ -156,19 +141,16 @@ class ProductosInventarioActivity : AppCompatActivity() {
             }
         }
 
-        // Aviso amarillo: solo se ve si hay productos con stock bajo
         val bajos = productos.count { it.nivel == NivelStock.BAJO }
         bannerStockBajo.visibility = if (bajos == 0) View.GONE else View.VISIBLE
         tvAvisoTitulo.text =
             if (bajos == 1) "1 producto con stock bajo" else "$bajos productos con stock bajo"
 
-        // Botón de filtro: se resalta cuando hay un filtro de stock activo
         btnFiltro.setBackgroundResource(
             if (filtroStock == FiltroStock.TODOS) R.drawable.bg_users_input
             else R.drawable.bg_catalogo_manage
         )
 
-        // Lista: categoría + estado de stock + texto del buscador
         val texto = etBuscar.text.toString().trim().lowercase()
         val lista = productos.filter { p ->
             (categoriaActual == null || p.categoria == categoriaActual) &&

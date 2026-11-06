@@ -8,7 +8,6 @@
     android:layout_height="match_parent"
     android:background="#FDFBFF">
 
-    <!-- ===== ENCABEZADO ===== -->
     <LinearLayout
         android:id="@+id/headerTitulos"
         android:layout_width="wrap_content"
@@ -36,7 +35,6 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- ===== CONTENIDO CON SCROLL ===== -->
     <ScrollView
         android:id="@+id/scrollPerfil"
         android:layout_width="0dp"
@@ -58,7 +56,6 @@
             android:paddingEnd="20dp"
             android:paddingBottom="24dp">
 
-            <!-- Tarjeta de presentación -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -124,7 +121,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Información personal -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -229,7 +225,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Mi negocio -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -334,7 +329,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Botón: Editar información -->
             <LinearLayout
                 android:id="@+id/btnEditar"
                 android:layout_width="match_parent"
@@ -363,7 +357,6 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Botón: Cerrar sesión -->
             <LinearLayout
                 android:id="@+id/btnCerrarSesion"
                 android:layout_width="match_parent"
@@ -394,7 +387,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ===== MENÚ INFERIOR (Más activo) ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"

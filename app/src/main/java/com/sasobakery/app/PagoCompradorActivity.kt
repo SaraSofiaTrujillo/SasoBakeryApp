@@ -15,9 +15,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 
-// Paso 3 de la compra: elegir cómo pagar y ver el resumen del pedido.
-// Los montos salen de CarritoRepositorio y EntregaRepositorio; lo elegido se guarda
-// en PagoRepositorio. Esta versión es una simulación: no se procesa ningún pago real.
 class PagoCompradorActivity : AppCompatActivity() {
 
     private val adapter = MetodoPagoAdapter { metodo ->
@@ -34,7 +31,6 @@ class PagoCompradorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Sin productos en el carrito no tiene sentido esta pantalla
         if (CarritoRepositorio.cantidadTotal() == 0) {
             finish()
             return
@@ -66,14 +62,9 @@ class PagoCompradorActivity : AppCompatActivity() {
         refrescar()
     }
 
-    // ---------- Pantalla ----------
-
-    /** Vuelve a dibujar las opciones, el resumen y el botón con los datos actuales. */
     private fun refrescar() {
-        // Opciones de pago (la elegida lleva borde morado)
         adapter.submit(PagoRepositorio.metodos(), PagoRepositorio.metodoElegido().id)
 
-        // Resumen en pesos colombianos
         val unidades = CarritoRepositorio.cantidadTotal()
         tvResumenProductos.text = if (unidades == 1) "1 producto" else "$unidades productos"
         tvResumenSubtotal.text = formatearCop(CarritoRepositorio.total())
@@ -86,7 +77,6 @@ class PagoCompradorActivity : AppCompatActivity() {
         btnPagar.text = "Pagar ${formatearCop(total)}"
     }
 
-    // ---------- Nueva tarjeta ----------
 
     private fun mostrarDialogoTarjeta() {
         val dialogo = BottomSheetDialog(this)
@@ -114,7 +104,6 @@ class PagoCompradorActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Solo se guardan los últimos 4 dígitos
             PagoRepositorio.agregarTarjeta(digitos, vence)
             refrescar()
             dialogo.dismiss()
@@ -122,22 +111,18 @@ class PagoCompradorActivity : AppCompatActivity() {
         }
 
         dialogo.setContentView(vista)
-        // Se abre completa y el teclado no tapa los campos
         dialogo.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         dialogo.behavior.skipCollapsed = true
         dialogo.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         dialogo.show()
     }
 
-    // ---------- Pagar ----------
 
     private fun pagar() {
-        // Si ya se pagó (carrito vacío), un segundo toque no hace nada
         if (CarritoRepositorio.cantidadTotal() == 0) return
 
         PagoRepositorio.idSeleccionado = PagoRepositorio.metodoElegido().id
 
-        // Crea el pedido, descuenta el stock y vacía el carrito
         val pedido = PagoRepositorio.confirmarPedido()
         if (pedido == null) {
             mensaje(PagoRepositorio.mensajeError ?: "No se pudo crear el pedido")

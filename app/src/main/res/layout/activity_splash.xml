@@ -9,7 +9,6 @@
     android:background="@color/saso_lavanda"
     tools:context=".SplashActivity">
 
-    <!-- Círculos decorativos (mismos colores del login) -->
     <View
         android:id="@+id/circuloRosa"
         android:layout_width="220dp"
@@ -43,7 +42,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Logo: queda exactamente en el centro, igual que el del splash del sistema -->
     <ImageView
         android:id="@+id/ivSplashLogo"
         android:layout_width="144dp"

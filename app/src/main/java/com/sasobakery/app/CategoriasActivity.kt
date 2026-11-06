@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView
 
 class CategoriasActivity : AppCompatActivity() {
 
-    // Datos de ejemplo (luego vendrán de la base de datos)
     private val categorias = listOf(
         Categoria("Tortas", 8),
         Categoria("Postres", 6),
@@ -39,10 +38,8 @@ class CategoriasActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnMenu).setOnClickListener { proximamente() }
         findViewById<View>(R.id.btnNuevaCategoria).setOnClickListener { proximamente() }
 
-        // Pestaña Productos: vuelve al catálogo
         findViewById<View>(R.id.tabProductos).setOnClickListener { abrirProductos() }
 
-        // Menú inferior
         findViewById<View>(R.id.navResumen).setOnClickListener { finish() }
         findViewById<View>(R.id.navPedidos).setOnClickListener {
             startActivity(Intent(this, PedidosActivity::class.java))

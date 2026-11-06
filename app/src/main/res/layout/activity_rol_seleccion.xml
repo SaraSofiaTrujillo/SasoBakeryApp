@@ -24,7 +24,6 @@
             android:paddingEnd="24dp"
             android:paddingBottom="24dp">
 
-            <!-- Encabezado -->
             <ImageView
                 android:layout_width="60dp"
                 android:layout_height="60dp"
@@ -60,12 +59,11 @@
                 android:paddingTop="6dp"
                 android:paddingEnd="14dp"
                 android:paddingBottom="6dp"
-                android:text="Pantalla provisional · solo para pruebas"
+                android:text="Pantalla provisional para pruebas"
                 android:textColor="#5D477F"
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
-            <!-- Administrador -->
             <LinearLayout
                 android:id="@+id/cardAdmin"
                 android:layout_width="match_parent"
@@ -126,7 +124,6 @@
                     android:tint="#8A8494" />
             </LinearLayout>
 
-            <!-- Vendedor -->
             <LinearLayout
                 android:id="@+id/cardVendedor"
                 android:layout_width="match_parent"
@@ -187,7 +184,6 @@
                     android:tint="#8A8494" />
             </LinearLayout>
 
-            <!-- Comprador -->
             <LinearLayout
                 android:id="@+id/cardComprador"
                 android:layout_width="match_parent"

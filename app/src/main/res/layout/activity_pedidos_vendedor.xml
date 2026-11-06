@@ -8,7 +8,6 @@
     android:layout_height="match_parent"
     android:background="#FDFBFF">
 
-    <!-- ===== ENCABEZADO ===== -->
     <LinearLayout
         android:id="@+id/headerTitulos"
         android:layout_width="wrap_content"
@@ -57,7 +56,6 @@
             android:tint="#5D477F" />
     </FrameLayout>
 
-    <!-- ===== RESUMEN (contadores) ===== -->
     <LinearLayout
         android:id="@+id/cardResumen"
         android:layout_width="0dp"
@@ -163,7 +161,6 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- ===== CHIPS DE FILTRO ===== -->
     <HorizontalScrollView
         android:id="@+id/scrollChips"
         android:layout_width="0dp"
@@ -229,7 +226,6 @@
         </LinearLayout>
     </HorizontalScrollView>
 
-    <!-- ===== LISTA DE PEDIDOS (solo esta parte hace scroll) ===== -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvPedidos"
         android:layout_width="0dp"
@@ -260,7 +256,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/rvPedidos" />
 
-    <!-- ===== MENÚ INFERIOR (Pedidos activo) ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"

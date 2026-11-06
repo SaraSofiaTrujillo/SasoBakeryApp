@@ -43,13 +43,11 @@ class PedidosVendedorAdapter(
         holder.tvCliente.text = p.cliente
         holder.tvProductos.text = p.resumenProductos
 
-        // Etiqueta de estado (si está cancelado dice "Cancelado" en gris)
         holder.tvEstado.text = p.etiquetaEstado
         holder.tvEstado.backgroundTintList =
             ColorStateList.valueOf(Color.parseColor(p.fondoEstado))
         holder.tvEstado.setTextColor(Color.parseColor(p.colorTextoEstado))
 
-        // Botón morado: solo si todavía hay una acción posible
         val accion = p.textoAccion
         if (accion == null) {
             holder.btnAccion.visibility = View.GONE

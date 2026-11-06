@@ -106,8 +106,6 @@ class CatalogoCompradorActivity : AppCompatActivity() {
             startActivity(android.content.Intent(this, PerfilCompradorActivity::class.java))
         }
     }
-
-    // Cada vez que se vuelve a esta pantalla se leen de nuevo los productos y el carrito
     override fun onResume() {
         super.onResume()
         findViewById<TextView>(R.id.tvSaludo).text =
@@ -115,16 +113,11 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         refrescar()
     }
 
-
-    // ---------- Actualización de pantalla ----------
-
-    /** Recalcula chips, título, banner, lista y globito del carrito. */
     private fun refrescar() {
         val texto = normalizarTexto(etBuscar.text.toString())
         val buscando = texto.isNotEmpty()
         val enInicio = categoriaActual == null && !buscando
 
-        // Chips: seleccionado o no
         chips.forEach { (chip, categoria) ->
             if (categoria == categoriaActual) {
                 chip.setBackgroundResource(R.drawable.bg_users_chip_selected)
@@ -135,7 +128,6 @@ class CatalogoCompradorActivity : AppCompatActivity() {
             }
         }
 
-        // Qué productos se ven
         val base = if (enInicio && !mostrarTodo) {
             InventarioRepositorio.obtenerFavoritosDeSaso() // solo los favoritos de la casa
         } else {
@@ -150,7 +142,6 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         adapter.submit(lista)
         tvVacio.visibility = if (lista.isEmpty()) View.VISIBLE else View.GONE
 
-        // Título de la sección, enlace y banner según lo que se está haciendo
         tvTituloSeccion.text = when {
             buscando -> "Resultados"
             categoriaActual != null -> categoriaActual
@@ -164,13 +155,11 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         actualizarGlobito()
     }
 
-    // Globito del carrito: se oculta con 0 y muestra "9+" si pasa de 9
     private fun actualizarGlobito() {
         val total = CarritoRepositorio.cantidadTotal()
         tvBadgeCarrito.visibility = if (total == 0) View.GONE else View.VISIBLE
         tvBadgeCarrito.text = if (total > 9) "9+" else total.toString()
     }
-    // ---------- Detalle del producto ----------
 
     private fun abrirDetalle(p: ProductoInventario) {
         val intent = android.content.Intent(this, ProductoDetalleActivity::class.java)
@@ -180,7 +169,6 @@ class CatalogoCompradorActivity : AppCompatActivity() {
     private fun abrirCarrito() {
         startActivity(android.content.Intent(this, CarritoCompradorActivity::class.java))
     }
-    // ---------- Carrito ----------
 
     private fun agregarAlCarrito(p: ProductoInventario) {
         val mensaje = when (CarritoRepositorio.agregar(p.id)) {
@@ -193,9 +181,6 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         actualizarGlobito()
     }
 
-    // ---------- Utilidades ----------
-
-    // Desplaza la pantalla suavemente hasta los chips de categoría
     private fun irALosChips() {
         scroll.post {
             val margen = (8 * resources.displayMetrics.density).toInt()

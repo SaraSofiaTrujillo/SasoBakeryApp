@@ -10,8 +10,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 
-// Estados del pedido. La etiqueta es el texto corto que se ve en la tarjeta:
-// Pendiente -> "Nuevo", En preparación -> "Preparando", Listo para entregar -> "Listo"
 enum class EstadoPedido(val etiqueta: String, val fondo: String, val texto: String) {
     PENDIENTE("Nuevo", "#FBE0E5", "#C2485F"),
     EN_PREPARACION("Preparando", "#E6DDF5", "#5D477F"),
@@ -24,11 +22,10 @@ data class Pedido(
     val cliente: String,
     val atiende: String,
     val fecha: String,
-    val total: Int, // pesos colombianos (COP)
+    val total: Int,
     val estado: EstadoPedido
 )
 
-// 84000 -> "84.000"
 private fun formatoPesos(valor: Int): String =
     String.format(Locale.US, "%,d", valor).replace(",", ".")
 

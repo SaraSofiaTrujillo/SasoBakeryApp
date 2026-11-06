@@ -9,7 +9,6 @@
     android:background="#FDFBFF"
     tools:context=".UsuarioFormularioActivity">
 
-    <!-- ===== BARRA SUPERIOR ===== -->
     <FrameLayout
         android:id="@+id/btnVolver"
         android:layout_width="40dp"
@@ -45,7 +44,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/btnVolver" />
 
-    <!-- ===== CONTENIDO CON SCROLL ===== -->
     <ScrollView
         android:id="@+id/scrollFormulario"
         android:layout_width="0dp"
@@ -68,7 +66,6 @@
             android:paddingEnd="20dp"
             android:paddingBottom="28dp">
 
-            <!-- Encabezado de la tarjeta -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -96,7 +93,6 @@
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Nombre -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -123,7 +119,6 @@
                 android:textColorHint="#8A8494"
                 android:textSize="13sp" />
 
-            <!-- Correo -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -150,7 +145,6 @@
                 android:textColorHint="#8A8494"
                 android:textSize="13sp" />
 
-            <!-- Rol -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -222,7 +216,6 @@
                     app:autoSizeTextType="uniform" />
             </LinearLayout>
 
-            <!-- Botón principal -->
             <TextView
                 android:id="@+id/btnRegistrar"
                 android:layout_width="match_parent"

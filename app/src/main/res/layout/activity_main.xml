@@ -261,7 +261,6 @@
 
     </GridLayout>
 
-    <!-- ===== MENÚ INFERIOR ===== -->
     <View
         android:id="@+id/bottomDivider"
         android:layout_width="0dp"
@@ -338,7 +337,6 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
-        <!-- Productos -->
         <LinearLayout
             android:id="@+id/navProductos"
             android:layout_width="0dp"
@@ -366,7 +364,6 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
-        <!-- Más -->
         <LinearLayout
             android:id="@+id/navUsuarios"
             android:layout_width="0dp"
