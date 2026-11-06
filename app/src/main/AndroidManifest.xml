@@ -61,6 +61,15 @@
             android:name=".UsuariosRolesActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".UsuariosRolesActivity"
+            android:exported="false" />
+        <!-- Invitar usuario: registro con nombre, correo y rol (administrador) -->
+        <activity
+            android:name=".UsuarioFormularioActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Vendedor -->
         <activity
             android:name=".VendedorPrincipalActivity"

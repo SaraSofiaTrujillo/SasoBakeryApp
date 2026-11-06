@@ -24,7 +24,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 class LoginActivity : AppCompatActivity() {
 
     // ===== CUENTAS DE PRUEBA (correo -> pantalla principal del rol) =====
-    private val cuentasDePrueba = CuentasRepositorio.cuentasDePrueba
+    private val cuentasDePrueba get() = CuentasRepositorio.cuentasDePrueba
     private val largoMinimoClave = CuentasRepositorio.LARGO_MINIMO_CLAVE
     // ====================================================================
 

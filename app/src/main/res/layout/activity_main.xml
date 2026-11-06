@@ -368,7 +368,7 @@
 
         <!-- Más -->
         <LinearLayout
-            android:id="@+id/navMas"
+            android:id="@+id/navUsuarios"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -382,14 +382,14 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_more"
+                android:src="@drawable/ic_person"
                 android:tint="#8A8494" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Más"
+                android:text="Usuarios"
                 android:textColor="#8A8494"
                 android:textSize="11sp" />
         </LinearLayout>

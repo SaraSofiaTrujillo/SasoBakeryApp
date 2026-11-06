@@ -11,7 +11,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        findViewById<android.view.View>(R.id.navMas).setOnClickListener {
+        findViewById<android.view.View>(R.id.navUsuarios).setOnClickListener {
             startActivity(android.content.Intent(this, UsuariosRolesActivity::class.java))
         }
         findViewById<android.view.View>(R.id.navProductos).setOnClickListener {

@@ -59,7 +59,7 @@ class ProductosCategoriasActivity : AppCompatActivity() {
             startActivity(Intent(this, PedidosActivity::class.java))
             finish()
         }
-        findViewById<View>(R.id.navMas).setOnClickListener {
+        findViewById<View>(R.id.navUsuarios).setOnClickListener {
             startActivity(Intent(this, UsuariosRolesActivity::class.java))
             finish()
         }

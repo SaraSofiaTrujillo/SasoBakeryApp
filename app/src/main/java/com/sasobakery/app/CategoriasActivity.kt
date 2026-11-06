@@ -49,7 +49,7 @@ class CategoriasActivity : AppCompatActivity() {
             finish()
         }
         findViewById<View>(R.id.navProductos).setOnClickListener { abrirProductos() }
-        findViewById<View>(R.id.navMas).setOnClickListener {
+        findViewById<View>(R.id.navUsuarios).setOnClickListener {
             startActivity(Intent(this, UsuariosRolesActivity::class.java))
             finish()
         }

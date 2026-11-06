@@ -46,6 +46,17 @@
                 android:maxLines="1"
                 android:textColor="#8A8494"
                 android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/tvEstado"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Cuenta desactivada"
+                android:textColor="#C2485F"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
         </LinearLayout>
 
         <TextView
@@ -61,13 +72,24 @@
             android:textSize="10sp"
             android:textStyle="bold" />
 
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginStart="10dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_more"
-            android:tint="#8A8494" />
+        <!-- Área táctil de los tres puntos (40dp para que sea fácil de tocar) -->
+        <FrameLayout
+            android:id="@+id/btnMas"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="2dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:contentDescription="Más opciones"
+                android:src="@drawable/ic_more"
+                android:tint="#8A8494" />
+        </FrameLayout>
     </LinearLayout>
 
     <View
