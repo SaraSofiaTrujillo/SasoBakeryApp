@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 // Pantalla de inicio de sesión (acceso principal de la app).
 // Por ahora es SIMULADA: no hay autenticación real. Según el correo de prueba
@@ -73,6 +74,10 @@ class LoginActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnIniciar).setOnClickListener { iniciarSesion() }
 
+        // Acceso con huella
+        findViewById<View>(R.id.btnBiometria).setOnClickListener { entrarConBiometria() }
+        findViewById<View>(R.id.btnQuitarBiometria).setOnClickListener { quitarBiometria() }
+
         // Todavía sin pantalla
         findViewById<View>(R.id.btnOlvide).setOnClickListener {
             val intent = Intent(this, RecuperarClaveActivity::class.java)
@@ -129,7 +134,88 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        // Se cierra el login para que Atrás no regrese a él desde dentro de la app
+        // Contraseña correcta: se ofrece la huella (si el celular puede) y se entra
+        terminarInicioDeSesion(correo, destino)
+    }
+
+    // ---------- Acceso con huella ----------
+
+    // Cada vez que se ve el login se revisa si debe aparecer el botón de huella
+    override fun onResume() {
+        super.onResume()
+        actualizarBotonBiometria()
+    }
+
+    // El botón solo aparece si la huella está activada y el celular todavía la permite
+    private fun actualizarBotonBiometria() {
+        val bloque = findViewById<View>(R.id.bloqueBiometria)
+        val correoActivado = BiometriaRepositorio.correoActivado(this)
+        val disponible = BiometriaHelper.estado(this) == EstadoBiometria.DISPONIBLE
+
+        if (correoActivado != null && disponible) {
+            findViewById<TextView>(R.id.tvBiometriaCuenta).text =
+                "Cuenta: ${enmascararCorreo(correoActivado)}"
+            bloque.visibility = View.VISIBLE
+        } else {
+            bloque.visibility = View.GONE
+        }
+    }
+
+    // Después de iniciar sesión con contraseña: ofrece activar la huella y entra a la app
+    private fun terminarInicioDeSesion(correo: String, destino: Class<*>) {
+        val puedeOfrecer = BiometriaHelper.estado(this) == EstadoBiometria.DISPONIBLE &&
+                !BiometriaRepositorio.estaActivada(this, correo)
+        if (!puedeOfrecer) {
+            abrirInicio(destino)
+            return
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("¿Entrar con tu huella?")
+            .setMessage("La próxima vez podrás entrar a Saso Bakery tocando el sensor, sin escribir tu contraseña.")
+            .setCancelable(false)
+            .setNegativeButton("Ahora no") { _, _ -> abrirInicio(destino) }
+            .setPositiveButton("Activar") { _, _ ->
+                BiometriaHelper.activar(this, correo) { activada ->
+                    if (activada) mensaje("Acceso con huella activado")
+                    abrirInicio(destino)
+                }
+            }
+            .show()
+    }
+
+    private fun entrarConBiometria() {
+        BiometriaHelper.entrar(
+            this,
+            alEntrar = { correo ->
+                val destino = cuentasDePrueba[correo]
+                if (destino == null) {
+                    BiometriaRepositorio.desactivar(this)
+                    actualizarBotonBiometria()
+                    mensaje("Esa cuenta ya no existe. Inicia sesión con tu contraseña.")
+                } else {
+                    abrirInicio(destino)
+                }
+            },
+            alFallar = { actualizarBotonBiometria() }
+        )
+    }
+
+    private fun quitarBiometria() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("¿Dejar de usar la huella?")
+            .setMessage("En este celular tendrás que iniciar sesión con tu contraseña.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Dejar de usar") { _, _ ->
+                BiometriaRepositorio.desactivar(this)
+                actualizarBotonBiometria()
+                mensaje("Acceso con huella desactivado")
+            }
+            .show()
+    }
+
+    // Se cierra el login para que Atrás no regrese a él desde dentro de la app
+    private fun abrirInicio(destino: Class<*>) {
         startActivity(Intent(this, destino))
         finish()
     }

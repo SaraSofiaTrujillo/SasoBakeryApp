@@ -226,7 +226,63 @@
                     android:textColor="#FFFFFF"
                     android:textSize="14sp"
                     android:textStyle="bold" />
+                <!-- Acceso con huella: solo se ve si ya está activado en este celular -->
+                <LinearLayout
+                    android:id="@+id/bloqueBiometria"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
+                    <LinearLayout
+                        android:id="@+id/btnBiometria"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@drawable/bg_users_input"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_fingerprint"
+                            android:tint="#7B5EA7" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="Entrar con huella"
+                            android:textColor="#5D477F"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvBiometriaCuenta"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="center"
+                        android:textColor="#8A8494"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/btnQuitarBiometria"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="6dp"
+                        android:text="Dejar de usar huella en este celular"
+                        android:textColor="#7B5EA7"
+                        android:textSize="11sp" />
+                </LinearLayout>
                 <!-- o continúa con -->
                 <LinearLayout
                     android:layout_width="match_parent"

@@ -31,7 +31,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
     private lateinit var tvBadgeNav: TextView
     private lateinit var tvBadgePedidos: TextView
     private lateinit var tvSubDirecciones: TextView
-
+    private lateinit var tvSubHuella: TextView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -93,6 +93,11 @@ class PerfilCompradorActivity : AppCompatActivity() {
         agregarFila(opciones, R.drawable.ic_card, "Métodos de pago") { mostrarMetodosPago() }
         agregarDivisor(opciones)
         agregarFila(opciones, R.drawable.ic_bell, "Notificaciones") { mostrarNotificaciones() }
+        agregarDivisor(opciones)
+        val filaHuella = agregarFila(
+            opciones, R.drawable.ic_fingerprint, "Acceso con huella", "Entra sin escribir tu contraseña"
+        ) { gestionarHuella() }
+        tvSubHuella = filaHuella.findViewById(R.id.tvSub)
         agregarDivisor(opciones)
         agregarFila(
             opciones, R.drawable.ic_logout, "Cerrar sesión", peligro = true
@@ -159,6 +164,8 @@ class PerfilCompradorActivity : AppCompatActivity() {
         } else {
             "Agrega tu dirección de entrega"
         }
+
+        actualizarTextoHuella()
 
         // Globito del carrito
         val total = CarritoRepositorio.cantidadTotal()
@@ -277,7 +284,56 @@ class PerfilCompradorActivity : AppCompatActivity() {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)
     }
+    // ---------- Acceso con huella ----------
 
+    private fun actualizarTextoHuella() {
+        val correo = PerfilCompradorRepositorio.obtener().correo
+        tvSubHuella.text = when {
+            BiometriaRepositorio.estaActivada(this, correo) -> "Activado en este celular"
+            BiometriaHelper.estado(this) == EstadoBiometria.SIN_SENSOR ->
+                "Este celular no tiene sensor biométrico"
+            else -> "Desactivado"
+        }
+    }
+
+    // Activa o desactiva la huella según el estado actual
+    private fun gestionarHuella() {
+        val correo = PerfilCompradorRepositorio.obtener().correo
+
+        if (BiometriaRepositorio.estaActivada(this, correo)) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("¿Desactivar el acceso con huella?")
+                .setMessage("Tendrás que iniciar sesión con tu contraseña en este celular.")
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Desactivar") { _, _ ->
+                    BiometriaRepositorio.desactivar(this)
+                    actualizarTextoHuella()
+                    mensaje("Acceso con huella desactivado")
+                }
+                .show()
+            return
+        }
+
+        when (BiometriaHelper.estado(this)) {
+            EstadoBiometria.DISPONIBLE ->
+                BiometriaHelper.activar(this, correo) { activada ->
+                    if (activada) mensaje("Acceso con huella activado")
+                    actualizarTextoHuella()
+                }
+            EstadoBiometria.SIN_HUELLA_REGISTRADA ->
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("Registra tu huella primero")
+                    .setMessage("Este celular todavía no tiene una huella registrada. Regístrala en los ajustes y vuelve aquí.")
+                    .setNegativeButton("Ahora no", null)
+                    .setPositiveButton("Abrir ajustes") { _, _ ->
+                        BiometriaHelper.abrirAjustesDeRegistro(this)
+                    }
+                    .show()
+            EstadoBiometria.SIN_SENSOR -> mensaje("Este celular no tiene sensor biométrico")
+            EstadoBiometria.NO_DISPONIBLE ->
+                mensaje("La biometría no está disponible ahora. Intenta más tarde.")
+        }
+    }
     // ---------- Navegación ----------
 
     // Vuelve al catálogo que ya estaba abierto (no abre uno nuevo encima)
