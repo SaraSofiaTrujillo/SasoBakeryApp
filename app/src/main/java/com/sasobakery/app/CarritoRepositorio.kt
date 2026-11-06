@@ -24,16 +24,30 @@ object CarritoRepositorio {
     private val cantidades = linkedMapOf<Int, Int>()
 
     /** Agrega 1 unidad si el producto existe, está disponible y hay stock suficiente. */
-    fun agregar(idProducto: Int): ResultadoAgregar {
+    fun agregar(idProducto: Int): ResultadoAgregar = agregar(idProducto, 1)
+
+    /**
+     * Agrega varias unidades de una vez. Si no alcanza el stock, no cambia nada
+     * y devuelve LIMITE_DE_STOCK.
+     */
+    fun agregar(idProducto: Int, cantidad: Int): ResultadoAgregar {
         val producto = InventarioRepositorio.buscarPorId(idProducto)
         if (producto == null || !producto.disponible) return ResultadoAgregar.NO_DISPONIBLE
         if (producto.stock <= 0) return ResultadoAgregar.AGOTADO
 
+        val unidades = cantidad.coerceAtLeast(1)
         val actual = cantidades[idProducto] ?: 0
-        if (actual >= producto.stock) return ResultadoAgregar.LIMITE_DE_STOCK
+        if (actual + unidades > producto.stock) return ResultadoAgregar.LIMITE_DE_STOCK
 
-        cantidades[idProducto] = actual + 1
+        cantidades[idProducto] = actual + unidades
         return ResultadoAgregar.AGREGADO
+    }
+
+    /** Cuántas unidades más se pueden agregar: el stock menos lo que ya hay en el carrito. */
+    fun unidadesAgregables(idProducto: Int): Int {
+        val producto = InventarioRepositorio.buscarPorId(idProducto) ?: return 0
+        if (!producto.disponible) return 0
+        return (producto.stock - cantidadDe(idProducto)).coerceAtLeast(0)
     }
 
     /** Quita 1 unidad (si era la última, quita el producto del carrito). */

@@ -148,7 +148,7 @@ class PerfilVendedorActivity : AppCompatActivity() {
     private fun confirmarCerrarSesion() {
         MaterialAlertDialogBuilder(this)
             .setTitle("¿Cerrar sesión?")
-            .setMessage("Volverás a la pantalla de selección de rol.")
+            .setMessage("Volverás a la pantalla de inicio de sesión.")
             .setNegativeButton("Cancelar", null)
             .setPositiveButton("Cerrar sesión") { _, _ -> cerrarSesion() }
             .show()
@@ -156,7 +156,7 @@ class PerfilVendedorActivity : AppCompatActivity() {
 
     // Va a la selección de rol y borra el historial (Atrás no regresa al perfil)
     private fun cerrarSesion() {
-        val intent = Intent(this, RolSeleccionActivity::class.java)
+        val intent = Intent(this, LoginActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)
     }

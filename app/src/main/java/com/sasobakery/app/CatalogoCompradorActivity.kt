@@ -19,7 +19,7 @@ class CatalogoCompradorActivity : AppCompatActivity() {
     private val nombreComprador = "Valentina"
 
     private val adapter = CatalogoAdapter(
-        onProductoClick = { proximamente() }, // se conecta al detalle del producto más adelante
+        onProductoClick = { producto -> abrirDetalle(producto) },
         onAgregarClick = { producto -> agregarAlCarrito(producto) },
         onFavoritoClick = { producto -> FavoritosRepositorio.alternar(producto.id) }
     )
@@ -96,20 +96,25 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         }
 
         // Carrito (encabezado y menú): todavía no existe la pantalla del carrito
-        findViewById<View>(R.id.btnCarrito).setOnClickListener { proximamente() }
-        findViewById<View>(R.id.navCarrito).setOnClickListener { proximamente() }
+        findViewById<View>(R.id.btnCarrito).setOnClickListener { abrirCarrito() }
+        findViewById<View>(R.id.navCarrito).setOnClickListener { abrirCarrito() }
 
         // Menú inferior
         findViewById<View>(R.id.navInicio).setOnClickListener { scroll.smoothScrollTo(0, 0) }
         findViewById<View>(R.id.navCategorias).setOnClickListener { irALosChips() }
-        findViewById<View>(R.id.navPerfil).setOnClickListener { proximamente() }
+        findViewById<View>(R.id.navPerfil).setOnClickListener {
+            startActivity(android.content.Intent(this, PerfilCompradorActivity::class.java))
+        }
     }
 
     // Cada vez que se vuelve a esta pantalla se leen de nuevo los productos y el carrito
     override fun onResume() {
         super.onResume()
+        findViewById<TextView>(R.id.tvSaludo).text =
+            "Hola, ${PerfilCompradorRepositorio.obtener().nombre.substringBefore(" ")}"
         refrescar()
     }
+
 
     // ---------- Actualización de pantalla ----------
 
@@ -165,7 +170,16 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         tvBadgeCarrito.visibility = if (total == 0) View.GONE else View.VISIBLE
         tvBadgeCarrito.text = if (total > 9) "9+" else total.toString()
     }
+    // ---------- Detalle del producto ----------
 
+    private fun abrirDetalle(p: ProductoInventario) {
+        val intent = android.content.Intent(this, ProductoDetalleActivity::class.java)
+        intent.putExtra(ProductoDetalleActivity.EXTRA_PRODUCTO_ID, p.id)
+        startActivity(intent)
+    }
+    private fun abrirCarrito() {
+        startActivity(android.content.Intent(this, CarritoCompradorActivity::class.java))
+    }
     // ---------- Carrito ----------
 
     private fun agregarAlCarrito(p: ProductoInventario) {

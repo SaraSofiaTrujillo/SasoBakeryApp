@@ -100,4 +100,13 @@ object InventarioRepositorio {
             }
         }
     }
+
+    /** Descuenta las unidades vendidas de un producto (el stock nunca baja de 0). */
+    fun descontarStock(id: Int, cantidad: Int) {
+        val posicion = productos.indexOfFirst { it.id == id }
+        if (posicion >= 0) {
+            val p = productos[posicion]
+            productos[posicion] = p.copy(stock = (p.stock - cantidad).coerceAtLeast(0))
+        }
+    }
 }

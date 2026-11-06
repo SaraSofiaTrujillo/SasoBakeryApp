@@ -6,4 +6,11 @@
     </style>
 
     <style name="Theme.SasoBakeryApp" parent="Base.Theme.SasoBakeryApp" />
+
+    <!-- Tema de arranque: lo que se ve mientras la app abre. Después cambia a Theme.SasoBakeryApp -->
+    <style name="Theme.SasoBakeryApp.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/saso_lavanda</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.SasoBakeryApp</item>
+    </style>
 </resources>

@@ -12,19 +12,30 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SasoBakeryApp"
         tools:targetApi="31">
+
+        <!-- Splash: es la pantalla de arranque de la app (después abre el login) -->
         <activity
-            android:name=".VendedorPrincipalActivity"
-            android:exported="false" />
-        <!-- Pantalla provisional de selección de rol: ahora abre primero la app -->
-        <activity
-            android:name=".RolSeleccionActivity"
-            android:exported="true">
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SasoBakeryApp.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- Panel general del administrador (ya no es la pantalla de arranque) -->
+        </activity>
+
+        <!-- Inicio de sesión (se abre desde el splash) -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false" />
+
+        <!-- Pantalla provisional de selección de rol: se abre desde el login (solo pruebas) -->
+        <activity
+            android:name=".RolSeleccionActivity"
+            android:exported="false" />
+
+        <!-- Panel general del administrador -->
         <activity
             android:name=".MainActivity"
             android:exported="false" />
@@ -39,6 +50,11 @@
             android:exported="false" />
         <activity
             android:name=".UsuariosRolesActivity"
+            android:exported="false" />
+
+        <!-- Vendedor -->
+        <activity
+            android:name=".VendedorPrincipalActivity"
             android:exported="false" />
         <activity
             android:name=".ProductosInventarioActivity"
@@ -56,9 +72,41 @@
         <activity
             android:name=".PerfilVendedorActivity"
             android:exported="false" />
+
+        <!-- Comprador -->
         <!-- Inicio y catálogo del comprador -->
         <activity
             android:name=".CatalogoCompradorActivity"
+            android:exported="false" />
+        <!-- Detalle del producto (comprador) -->
+        <activity
+            android:name=".ProductoDetalleActivity"
+            android:exported="false" />
+        <!-- Carrito del comprador -->
+        <activity
+            android:name=".CarritoCompradorActivity"
+            android:exported="false" />
+        <!-- Entrega o recojo (comprador) -->
+        <activity
+            android:name=".EntregaCompradorActivity"
+            android:exported="false" />
+        <!-- Método de pago (comprador) -->
+        <activity
+            android:name=".PagoCompradorActivity"
+            android:exported="false" />
+        <!-- Confirmación y seguimiento del pedido (comprador) -->
+        <activity
+            android:name=".PedidoConfirmadoActivity"
+            android:exported="false" />
+        <!-- Perfil e historial (comprador) -->
+        <activity
+            android:name=".PerfilCompradorActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MisPedidosCompradorActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FavoritosCompradorActivity"
             android:exported="false" />
     </application>
 

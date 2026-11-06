@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo del splash: círculo + logo, armados con los MISMOS recursos de las pantallas
+     (bg_users_logo e ic_logo_mark). Si cambias esos dos, el splash cambia solo.
+     Los porcentajes controlan el tamaño: más % = más pequeño. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:width="288dp"
+        android:height="288dp">
+        <inset
+            android:drawable="@drawable/bg_users_logo"
+            android:insetLeft="25%"
+            android:insetTop="25%"
+            android:insetRight="25%"
+            android:insetBottom="25%" />
+    </item>
+    <item>
+        <inset
+            android:drawable="@drawable/ic_logo_mark"
+            android:insetLeft="34%"
+            android:insetTop="34%"
+            android:insetRight="34%"
+            android:insetBottom="34%" />
+    </item>
+</layer-list>

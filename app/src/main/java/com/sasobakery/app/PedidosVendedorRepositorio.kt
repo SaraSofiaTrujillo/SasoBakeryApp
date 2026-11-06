@@ -25,7 +25,12 @@ data class PedidoGestion(
     val tipo: TipoEntrega,
     val productos: List<ProductoPedido>,
     val estado: EstadoPedido,
-    val cancelado: Boolean = false
+    val cancelado: Boolean = false,
+    // Datos que llenan los pedidos hechos por el comprador (los de ejemplo los dejan vacíos)
+    val fechaEntrega: String = "",  // ej. "Mañana 6 Nov"
+    val direccion: String = "",     // solo si es entrega a domicilio
+    val envio: Int = 0,             // costo del domicilio en pesos colombianos (COP)
+    val metodoPago: String = ""     // ej. "Nequi o Daviplata"
 ) {
     val total: Int get() = productos.sumOf { it.subtotal }
 
@@ -36,7 +41,9 @@ data class PedidoGestion(
         get() = productos.joinToString(", ") { "${it.nombre} x${it.cantidad}" }
 
     // "Entrega: 10:00 - 10:30" o "Recojo: 11:30"
-    val textoHorario: String get() = "${tipo.etiqueta}: $horario"
+    val textoHorario: String
+        get() = if (fechaEntrega.isBlank()) "${tipo.etiqueta}: $horario"
+        else "${tipo.etiqueta}: $fechaEntrega · $horario"
 
     // ---------- Cómo se ve el estado (si está cancelado, manda "Cancelado") ----------
     val etiquetaEstado: String get() = if (cancelado) "Cancelado" else estado.etiqueta
@@ -142,5 +149,21 @@ object PedidosVendedorRepositorio {
         if (!pedidos[posicion].sePuedeCancelar) return pedidos[posicion]
         pedidos[posicion] = pedidos[posicion].copy(cancelado = true)
         return pedidos[posicion]
+    }
+
+    // Comprador de prueba (es el mismo que aparece en la lista de usuarios del administrador)
+    const val COMPRADOR_DE_PRUEBA = "Valentina Mendoza"
+
+    /** Código del siguiente pedido: sigue la numeración (#SB-1051, #SB-1052...). */
+    fun siguienteCodigo(): String {
+        val mayor = pedidos.maxOfOrNull { p ->
+            p.codigo.filter { it.isDigit() }.toIntOrNull() ?: 0
+        } ?: 1000
+        return "#SB-${mayor + 1}"
+    }
+
+    /** Agrega un pedido nuevo al inicio de la lista (el vendedor lo ve como "Nuevo"). */
+    fun agregar(pedido: PedidoGestion) {
+        pedidos.add(0, pedido)
     }
 }

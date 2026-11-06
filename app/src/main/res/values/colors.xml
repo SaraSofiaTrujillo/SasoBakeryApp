@@ -2,4 +2,7 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Lila de fondo de Saso Bakery (mismo del login) -->
+    <color name="saso_lavanda">#F1EAFA</color>
 </resources>
