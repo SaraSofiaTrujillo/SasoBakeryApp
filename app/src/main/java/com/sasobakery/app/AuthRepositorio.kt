@@ -58,6 +58,9 @@ object AuthRepositorio {
     /** Correo de la cuenta con la sesión iniciada (null si no hay sesión). */
     fun correoActual(): String? = auth.currentUser?.email
 
+    /** ID (uid) de la cuenta con la sesión iniciada; sirve para no actuar sobre uno mismo. */
+    fun uidActual(): String? = auth.currentUser?.uid
+
     /** Pantalla principal que le corresponde a cada rol. */
     fun destinoPara(rol: Rol): Class<*> = when (rol) {
         Rol.ADMINISTRADOR -> MainActivity::class.java

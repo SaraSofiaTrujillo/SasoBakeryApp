@@ -15,13 +15,18 @@ enum class Rol(val etiqueta: String) {
     ADMINISTRADOR("Administrador")
 }
 
+/**
+ * Un usuario de la app tal como se ve en la lista del administrador.
+ * [id] es el uid de Firebase Authentication, que también es el ID de su documento
+ * en la colección "usuarios" de Firestore.
+ */
 data class Usuario(
     val iniciales: String,
     val nombre: String,
     val correo: String,
     val rol: Rol,
-    val id: Int = 0,
-    val activo: Boolean = true
+    val id: String = "",
+    val activo: Boolean = true // false = cuenta desactivada
 )
 
 class UsuariosAdapter(

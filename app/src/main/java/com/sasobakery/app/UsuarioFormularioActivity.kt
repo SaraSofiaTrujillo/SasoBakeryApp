@@ -17,16 +17,23 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
  * Pantalla "Invitar usuario" / "Editar usuario" del administrador.
  * - Sin EXTRA_USUARIO_ID: invita a una persona nueva. Se crea su cuenta real en
  *   Firebase y recibe un correo para elegir su contraseña.
- * - Con EXTRA_USUARIO_ID: edita un usuario existente (por ahora de la lista de ejemplo).
+ * - Con EXTRA_USUARIO_ID: edita el nombre y el rol de un usuario existente en Firestore.
+ *   El correo no se puede cambiar: es el acceso de la cuenta en Firebase Authentication.
  */
 class UsuarioFormularioActivity : AppCompatActivity() {
 
     companion object {
+        // Datos que la lista envía para abrir el formulario en modo edición
         const val EXTRA_USUARIO_ID = "usuario_id"
+        const val EXTRA_NOMBRE = "usuario_nombre"
+        const val EXTRA_CORREO = "usuario_correo"
+        const val EXTRA_ROL = "usuario_rol"
+        const val EXTRA_ULTIMO_ADMIN = "usuario_ultimo_admin"
     }
 
     private var rolSeleccionado = Rol.COMPRADOR // el rol con menos permisos va por defecto
-    private var usuarioEditando: Usuario? = null
+    private var idEditando: String? = null // null = se está invitando a alguien nuevo
+    private var esUltimoAdmin = false // true si no se le puede quitar el rol de administrador
     private var enCurso = false // evita enviar el formulario dos veces seguidas
     private var textoBoton = "" // texto original del botón, para restaurarlo
 
@@ -39,17 +46,6 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_usuario_formulario)
-
-        // ¿Modo edición? Si el usuario ya no existe, se cierra la pantalla.
-        val idEdicion = intent.getIntExtra(EXTRA_USUARIO_ID, -1)
-        if (idEdicion >= 0) {
-            usuarioEditando = UsuariosRepositorio.obtenerPorId(idEdicion)
-            if (usuarioEditando == null) {
-                Toast.makeText(this, "Ese usuario ya no existe", Toast.LENGTH_SHORT).show()
-                finish()
-                return
-            }
-        }
 
         // Deja espacio para las barras del sistema y para el teclado
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { vista, insets ->
@@ -76,13 +72,19 @@ class UsuarioFormularioActivity : AppCompatActivity() {
             }
         }
 
-        // Modo edición: textos propios y datos cargados
-        usuarioEditando?.let { u ->
+        // Modo edición: se cargan los datos recibidos y el correo queda bloqueado
+        idEditando = intent.getStringExtra(EXTRA_USUARIO_ID)
+        if (idEditando != null) {
             findViewById<TextView>(R.id.tvTitulo).text = "Editar usuario"
             btnRegistrar.text = "Guardar cambios"
-            etNombre.setText(u.nombre)
-            etCorreo.setText(u.correo)
-            rolSeleccionado = u.rol
+            etNombre.setText(intent.getStringExtra(EXTRA_NOMBRE).orEmpty())
+            etCorreo.setText(intent.getStringExtra(EXTRA_CORREO).orEmpty())
+            etCorreo.isEnabled = false
+            etCorreo.alpha = 0.6f
+            rolSeleccionado = Rol.values().firstOrNull {
+                it.name == intent.getStringExtra(EXTRA_ROL)
+            } ?: Rol.COMPRADOR
+            esUltimoAdmin = intent.getBooleanExtra(EXTRA_ULTIMO_ADMIN, false)
         }
         textoBoton = btnRegistrar.text.toString()
         actualizarChips()
@@ -125,44 +127,19 @@ class UsuarioFormularioActivity : AppCompatActivity() {
             return
         }
 
+        val editando = idEditando
+        if (editando != null) {
+            guardarCambios(editando, nombre)
+            return
+        }
+
         val correo = etCorreo.text.toString().trim().lowercase()
         if (!Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
             etCorreo.error = "Escribe un correo válido"
             etCorreo.requestFocus()
             return
         }
-
-        val editando = usuarioEditando
-
-        // Al editar, el propio correo del usuario no cuenta como repetido
-        if (UsuariosRepositorio.existeCorreo(correo, excluirId = editando?.id)) {
-            etCorreo.error = "Ya existe un usuario con este correo"
-            etCorreo.requestFocus()
-            return
-        }
-
-        if (editando == null) {
-            invitarUsuario(nombre, correo)
-            return
-        }
-
-        // No se puede quitar el rol de administrador al último administrador activo
-        if (rolSeleccionado != Rol.ADMINISTRADOR &&
-            UsuariosRepositorio.esUltimoAdminActivo(editando)
-        ) {
-            Toast.makeText(
-                this,
-                "Es el único administrador activo: debe seguir siéndolo",
-                Toast.LENGTH_LONG
-            ).show()
-            return
-        }
-        if (UsuariosRepositorio.actualizar(editando.id, nombre, correo, rolSeleccionado) == null) {
-            Toast.makeText(this, "Ese usuario ya no existe", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, "Cambios guardados", Toast.LENGTH_SHORT).show()
-        }
-        finish()
+        invitarUsuario(nombre, correo)
     }
 
     /**
@@ -170,7 +147,7 @@ class UsuarioFormularioActivity : AppCompatActivity() {
      * recibe un correo para crear su contraseña; el administrador mantiene su sesión.
      */
     private fun invitarUsuario(nombre: String, correo: String) {
-        cambiarEstadoCarga(true)
+        cambiarEstadoCarga(true, "Creando cuenta…")
         AuthRepositorio.crearUsuarioComoAdmin(nombre, correo, rolSeleccionado) { creado, aviso ->
             // Si la pantalla ya se cerró mientras esperaba, no se hace nada
             if (isFinishing || isDestroyed) return@crearUsuarioComoAdmin
@@ -190,10 +167,36 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         }
     }
 
+    /** Guarda en Firestore el nuevo nombre y rol del usuario que se está editando. */
+    private fun guardarCambios(id: String, nombre: String) {
+        // No se puede quitar el rol de administrador al último administrador activo
+        if (rolSeleccionado != Rol.ADMINISTRADOR && esUltimoAdmin) {
+            Toast.makeText(
+                this,
+                "Es el único administrador activo: debe seguir siéndolo",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        cambiarEstadoCarga(true, "Guardando…")
+        UsuariosRepositorio.actualizar(id, nombre, rolSeleccionado) { error ->
+            if (isFinishing || isDestroyed) return@actualizar
+            cambiarEstadoCarga(false)
+
+            if (error != null) {
+                Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "Cambios guardados", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
+    }
+
     // Mientras Firebase responde, el botón cambia de texto y no se puede pulsar
-    private fun cambiarEstadoCarga(cargando: Boolean) {
+    private fun cambiarEstadoCarga(cargando: Boolean, textoCargando: String = "") {
         enCurso = cargando
         btnRegistrar.isEnabled = !cargando
-        btnRegistrar.text = if (cargando) "Creando cuenta…" else textoBoton
+        btnRegistrar.text = if (cargando) textoCargando else textoBoton
     }
 }
