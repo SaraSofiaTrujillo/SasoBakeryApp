@@ -48,7 +48,13 @@ class ProductosCategoriasActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.tabCategorias).setOnClickListener { abrirCategorias() }
         findViewById<View>(R.id.btnGestionarCategorias).setOnClickListener { abrirCategorias() }
-
+        // "Resumen" vuelve al panel del administrador que ya estaba abierto
+        findViewById<View>(R.id.navResumen).setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            startActivity(intent)
+            finish()
+        }
         findViewById<View>(R.id.navPedidos).setOnClickListener {
             startActivity(Intent(this, PedidosActivity::class.java))
             finish()

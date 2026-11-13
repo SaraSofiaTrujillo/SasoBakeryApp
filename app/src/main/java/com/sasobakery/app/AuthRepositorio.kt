@@ -1,5 +1,7 @@
 package com.sasobakery.app
 
+import com.google.firebase.FirebaseApp
+import java.security.SecureRandom
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.auth.EmailAuthProvider
@@ -38,9 +40,17 @@ object AuthRepositorio {
 
     const val LARGO_MINIMO_CLAVE = 6 // mínimo que exige Firebase
     private const val COLECCION_USUARIOS = "usuarios"
-
+    private const val NOMBRE_APP_SECUNDARIA = "creacion_usuarios"
     private val auth get() = FirebaseAuth.getInstance()
     private val db get() = FirebaseFirestore.getInstance()
+
+
+    // Rol de la sesión actual, guardado en memoria para que la guardia de acceso lo
+    // consulte sin ir a Firestore cada vez. Se borra al cerrar sesión.
+    private var rolActual: Rol? = null
+
+    /** Rol de la sesión actual si ya se conoce (null si la app se reinició). */
+    fun rolEnCache(): Rol? = rolActual
 
     /** true si ya hay una sesión guardada en este celular. */
     fun haySesion(): Boolean = auth.currentUser != null
@@ -90,7 +100,10 @@ object AuthRepositorio {
                     "creado" to FieldValue.serverTimestamp()
                 )
                 db.collection(COLECCION_USUARIOS).document(usuario.uid).set(perfil)
-                    .addOnSuccessListener { alTerminar(ResultadoAuth.Exito(rol)) }
+                    .addOnSuccessListener {
+                        rolActual = rol
+                        alTerminar(ResultadoAuth.Exito(rol))
+                    }
                     .addOnFailureListener { error ->
                         // Una cuenta sin perfil no sirve: se borra para poder intentar otra vez
                         usuario.delete()
@@ -122,7 +135,107 @@ object AuthRepositorio {
 
     /** Cierra la sesión en este celular. */
     fun cerrarSesion() {
+        rolActual = null
         auth.signOut()
+    }
+    // ---------- Invitar usuarios (solo administrador) ----------
+
+    /**
+     * Crea la cuenta de otra persona (botón "Invitar usuario") sin cerrar la sesión del
+     * administrador. La cuenta nace con una contraseña temporal aleatoria que nadie
+     * conoce; la persona recibe un correo para crear la suya.
+     *
+     * [alTerminar] recibe dos datos:
+     *  - creado: true si la cuenta quedó creada.
+     *  - mensaje: si creado es false, el error; si creado es true, un aviso opcional
+     *    (por ejemplo, que la cuenta se creó pero el correo no se pudo enviar).
+     */
+    fun crearUsuarioComoAdmin(
+        nombre: String,
+        correo: String,
+        rol: Rol,
+        alTerminar: (creado: Boolean, mensaje: String?) -> Unit
+    ) {
+        if (rolActual != Rol.ADMINISTRADOR) {
+            alTerminar(false, "Solo un administrador puede invitar usuarios.")
+            return
+        }
+
+        // Crear la cuenta con la conexión principal cerraría la sesión del administrador
+        // (Firebase inicia sesión con la cuenta recién creada). Por eso se usa una
+        // conexión secundaria, que se desconecta apenas termina.
+        val authSecundaria = authSecundaria()
+
+        authSecundaria.createUserWithEmailAndPassword(correo, generarClaveTemporal())
+            .addOnSuccessListener { resultado ->
+                val nuevo = resultado.user
+                if (nuevo == null) {
+                    authSecundaria.signOut()
+                    alTerminar(false, "No se pudo crear la cuenta. Intenta de nuevo.")
+                    return@addOnSuccessListener
+                }
+
+                val perfil = hashMapOf(
+                    "nombre" to nombre,
+                    "correo" to correo,
+                    "rol" to rol.name.lowercase(),
+                    "activo" to true,
+                    "creado" to FieldValue.serverTimestamp()
+                )
+                // El perfil se guarda con la conexión principal: la del administrador
+                db.collection(COLECCION_USUARIOS).document(nuevo.uid).set(perfil)
+                    .addOnSuccessListener {
+                        authSecundaria.signOut()
+                        enviarEnlaceDeInvitacion(correo, alTerminar)
+                    }
+                    .addOnFailureListener { error ->
+                        // Una cuenta sin perfil no sirve: se borra antes de desconectar la secundaria
+                        nuevo.delete().addOnCompleteListener {
+                            authSecundaria.signOut()
+                            alTerminar(false, traducirError(error))
+                        }
+                    }
+            }
+            .addOnFailureListener { alTerminar(false, traducirError(it)) }
+    }
+
+    /** Envía el correo con el enlace para que la persona invitada cree su contraseña. */
+    private fun enviarEnlaceDeInvitacion(
+        correo: String,
+        alTerminar: (creado: Boolean, mensaje: String?) -> Unit
+    ) {
+        auth.setLanguageCode("es")
+        auth.sendPasswordResetEmail(correo)
+            .addOnSuccessListener { alTerminar(true, null) }
+            .addOnFailureListener {
+                alTerminar(
+                    true,
+                    "La cuenta se creó, pero no se pudo enviar el correo. La persona puede " +
+                            "usar «¿Olvidé mi contraseña?» en el inicio de sesión."
+                )
+            }
+    }
+
+    /** Conexión secundaria a Firebase, creada solo la primera vez que se necesita. */
+    private fun authSecundaria(): FirebaseAuth {
+        val appPrincipal = FirebaseApp.getInstance()
+        val appSecundaria = try {
+            FirebaseApp.getInstance(NOMBRE_APP_SECUNDARIA)
+        } catch (e: IllegalStateException) {
+            FirebaseApp.initializeApp(
+                appPrincipal.applicationContext,
+                appPrincipal.options,
+                NOMBRE_APP_SECUNDARIA
+            )
+        }
+        return FirebaseAuth.getInstance(appSecundaria)
+    }
+
+    /** Contraseña aleatoria de 24 caracteres que nadie llega a ver ni a usar. */
+    private fun generarClaveTemporal(): String {
+        val caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+        val azar = SecureRandom()
+        return (1..24).map { caracteres[azar.nextInt(caracteres.length)] }.joinToString("")
     }
 
     // ---------- Contraseña ----------
@@ -192,7 +305,10 @@ object AuthRepositorio {
                         auth.signOut()
                         alTerminar(ResultadoAuth.Error("Tu cuenta está desactivada. Contacta al administrador."))
                     }
-                    else -> alTerminar(ResultadoAuth.Exito(rol))
+                    else -> {
+                        rolActual = rol
+                        alTerminar(ResultadoAuth.Exito(rol))
+                    }
                 }
             }
             // Si falla la lectura (por ejemplo sin internet) no se cierra la sesión

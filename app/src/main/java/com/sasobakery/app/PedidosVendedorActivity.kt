@@ -74,7 +74,11 @@ class PedidosVendedorActivity : AppCompatActivity() {
             startActivity(Intent(this, ProductosInventarioActivity::class.java))
             finish()
         }
-        findViewById<View>(R.id.navMas).setOnClickListener { proximamente() }
+        // "Mas" abre el perfil del vendedor
+        findViewById<View>(R.id.navMas).setOnClickListener {
+            startActivity(Intent(this, PerfilVendedorActivity::class.java))
+            finish()
+        }
     }
 
     override fun onResume() {

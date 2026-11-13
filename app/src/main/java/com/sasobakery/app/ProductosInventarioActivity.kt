@@ -83,9 +83,15 @@ class ProductosInventarioActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnNuevo).setOnClickListener { abrirFormulario(0) }
 
         findViewById<View>(R.id.navResumen).setOnClickListener { finish() }
-        findViewById<View>(R.id.navPedidos).setOnClickListener { proximamente() }
-        findViewById<View>(R.id.navMas).setOnClickListener { proximamente() }
-
+        // "Pedidos" abre la gestión de pedidos y "Más" abre el perfil del vendedor
+        findViewById<View>(R.id.navPedidos).setOnClickListener {
+            startActivity(Intent(this, PedidosVendedorActivity::class.java))
+            finish()
+        }
+        findViewById<View>(R.id.navMas).setOnClickListener {
+            startActivity(Intent(this, PerfilVendedorActivity::class.java))
+            finish()
+        }
         refrescar()
     }
 

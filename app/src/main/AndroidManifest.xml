@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
+        android:name=".SasoApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -29,9 +30,6 @@
         <activity
             android:name=".LoginActivity"
             android:exported="false" />
-        <activity
-            android:name=".LoginActivity"
-            android:exported="false" />
 
         <!-- Recuperar clave -->
         <activity
@@ -44,11 +42,6 @@
             android:name=".RegistroActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
-        <!-- Pantalla de prueba paar login -->
-        <activity
-            android:name=".RolSeleccionActivity"
-            android:exported="false" />
 
         <!-- Panel general del administrador -->
         <activity
@@ -67,9 +60,6 @@
             android:name=".UsuariosRolesActivity"
             android:exported="false" />
 
-        <activity
-            android:name=".UsuariosRolesActivity"
-            android:exported="false" />
         <!-- crear usuario desde administrador-->
         <activity
             android:name=".UsuarioFormularioActivity"
