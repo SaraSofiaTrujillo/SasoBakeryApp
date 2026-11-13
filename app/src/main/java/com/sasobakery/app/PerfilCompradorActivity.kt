@@ -1,5 +1,7 @@
 package com.sasobakery.app
 
+import android.text.InputType
+import android.widget.FrameLayout
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
@@ -257,13 +259,17 @@ class PerfilCompradorActivity : AppCompatActivity() {
     }
 
     private fun cerrarSesion() {
+        AuthRepositorio.cerrarSesion() // cierra la sesión de Firebase
         val intent = Intent(this, LoginActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)
     }
 
+    // ---------- Acceso con huella ----------
+
+    // Muestra en el perfil si la huella está activada para la cuenta con sesión iniciada
     private fun actualizarTextoHuella() {
-        val correo = PerfilCompradorRepositorio.obtener().correo
+        val correo = AuthRepositorio.correoActual().orEmpty()
         tvSubHuella.text = when {
             BiometriaRepositorio.estaActivada(this, correo) -> "Activado en este celular"
             BiometriaHelper.estado(this) == EstadoBiometria.SIN_SENSOR ->
@@ -272,8 +278,9 @@ class PerfilCompradorActivity : AppCompatActivity() {
         }
     }
 
+    // Activa o desactiva la huella según el estado actual
     private fun gestionarHuella() {
-        val correo = PerfilCompradorRepositorio.obtener().correo
+        val correo = AuthRepositorio.correoActual().orEmpty()
 
         if (BiometriaRepositorio.estaActivada(this, correo)) {
             MaterialAlertDialogBuilder(this)
@@ -290,11 +297,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         }
 
         when (BiometriaHelper.estado(this)) {
-            EstadoBiometria.DISPONIBLE ->
-                BiometriaHelper.activar(this, correo) { activada ->
-                    if (activada) mensaje("Acceso con huella activado")
-                    actualizarTextoHuella()
-                }
+            EstadoBiometria.DISPONIBLE -> pedirClaveParaHuella(correo)
             EstadoBiometria.SIN_HUELLA_REGISTRADA ->
                 MaterialAlertDialogBuilder(this)
                     .setTitle("Registra tu huella primero")
@@ -309,6 +312,59 @@ class PerfilCompradorActivity : AppCompatActivity() {
                 mensaje("La biometría no está disponible ahora. Intenta más tarde.")
         }
     }
+
+    /**
+     * Para activar la huella hace falta la contraseña de la cuenta: se pide una vez,
+     * se comprueba con Firebase y se guarda cifrada, protegida por la huella.
+     */
+    private fun pedirClaveParaHuella(correo: String) {
+        val densidad = resources.displayMetrics.density
+        val campo = EditText(this).apply {
+            hint = "Tu contraseña"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        val contenedor = FrameLayout(this).apply {
+            val lado = (24 * densidad).toInt()
+            setPadding(lado, (8 * densidad).toInt(), lado, 0)
+            addView(
+                campo,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            )
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Confirma tu contraseña")
+            .setMessage("La necesitamos una vez para activar la huella. Se guarda cifrada y solo se abre con tu huella.")
+            .setView(contenedor)
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Continuar") { _, _ ->
+                verificarClaveYActivar(correo, campo.text.toString())
+            }
+            .show()
+    }
+
+    // Comprueba la contraseña en Firebase y, si es correcta, pide la huella para guardarla
+    private fun verificarClaveYActivar(correo: String, clave: String) {
+        if (clave.isEmpty()) {
+            mensaje("Escribe tu contraseña")
+            return
+        }
+        AuthRepositorio.verificarClave(clave) { error ->
+            if (isFinishing || isDestroyed) return@verificarClave
+            if (error != null) {
+                mensaje(error)
+                return@verificarClave
+            }
+            BiometriaHelper.activar(this, correo, clave) { activada ->
+                if (activada) mensaje("Acceso con huella activado")
+                actualizarTextoHuella()
+            }
+        }
+    }
+
     private fun irAlCatalogo() {
         val intent = Intent(this, CatalogoCompradorActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)

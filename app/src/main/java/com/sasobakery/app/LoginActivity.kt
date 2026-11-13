@@ -17,20 +17,26 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
+/**
+ * Pantalla de inicio de sesión. Valida los campos, inicia sesión con Firebase
+ * (AuthRepositorio) y abre la pantalla principal que corresponde al rol de la cuenta.
+ * También permite entrar con huella si el usuario la activó en este celular.
+ */
 class LoginActivity : AppCompatActivity() {
-
-    private val cuentasDePrueba get() = CuentasRepositorio.cuentasDePrueba
-    private val largoMinimoClave = CuentasRepositorio.LARGO_MINIMO_CLAVE
 
     private lateinit var etCorreo: EditText
     private lateinit var etClave: EditText
     private lateinit var btnMostrar: TextView
+    private lateinit var btnIniciar: TextView
+    private var enCurso = false // evita enviar el formulario dos veces seguidas
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_login)
 
+        // La zona lila llega hasta arriba y el panel blanco hasta abajo;
+        // el teclado empuja el contenido para no tapar los campos.
         val cabecera = findViewById<View>(R.id.headerLogin)
         val panel = findViewById<View>(R.id.panelLogin)
         val baseArriba = cabecera.paddingTop
@@ -47,11 +53,11 @@ class LoginActivity : AppCompatActivity() {
         etCorreo = findViewById(R.id.etCorreo)
         etClave = findViewById(R.id.etClave)
         btnMostrar = findViewById(R.id.btnMostrar)
-
-        etCorreo.setText("valentina@email.com")
+        btnIniciar = findViewById(R.id.btnIniciar)
 
         btnMostrar.setOnClickListener { alternarClave() }
 
+        // Botón "Listo" del teclado
         etClave.setOnEditorActionListener { _, accion, _ ->
             if (accion == EditorInfo.IME_ACTION_DONE) {
                 iniciarSesion()
@@ -61,8 +67,9 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        findViewById<View>(R.id.btnIniciar).setOnClickListener { iniciarSesion() }
+        btnIniciar.setOnClickListener { iniciarSesion() }
 
+        // Acceso con huella
         findViewById<View>(R.id.btnBiometria).setOnClickListener { entrarConBiometria() }
         findViewById<View>(R.id.btnQuitarBiometria).setOnClickListener { quitarBiometria() }
 
@@ -72,13 +79,12 @@ class LoginActivity : AppCompatActivity() {
             startActivity(intent)
         }
         findViewById<View>(R.id.btnGoogle).setOnClickListener { mensaje("Próximamente") }
-        findViewById<View>(R.id.btnRegistro).setOnClickListener { mensaje("Próximamente") }
-
-        findViewById<View>(R.id.btnElegirRol).setOnClickListener {
-            startActivity(Intent(this, RolSeleccionActivity::class.java))
+        findViewById<View>(R.id.btnRegistro).setOnClickListener {
+            startActivity(Intent(this, RegistroActivity::class.java))
         }
     }
 
+    // ---------- Contraseña ----------
 
     private fun alternarClave() {
         val estabaOculta = etClave.transformationMethod is PasswordTransformationMethod
@@ -89,8 +95,12 @@ class LoginActivity : AppCompatActivity() {
         btnMostrar.text = if (estabaOculta) "Ocultar" else "Mostrar"
     }
 
+    // ---------- Iniciar sesión ----------
 
+    /** Valida los campos y, si están bien, pide a Firebase iniciar sesión. */
     private fun iniciarSesion() {
+        if (enCurso) return
+
         val correo = etCorreo.text.toString().trim().lowercase()
         val clave = etClave.text.toString()
 
@@ -104,28 +114,43 @@ class LoginActivity : AppCompatActivity() {
             etCorreo.requestFocus()
             return
         }
-        if (clave.length < largoMinimoClave) {
-            etClave.error = "Mínimo $largoMinimoClave caracteres"
+        if (clave.length < AuthRepositorio.LARGO_MINIMO_CLAVE) {
+            etClave.error = "Mínimo ${AuthRepositorio.LARGO_MINIMO_CLAVE} caracteres"
             etClave.requestFocus()
             return
         }
 
-        val destino = cuentasDePrueba[correo]
-        if (destino == null) {
-            etCorreo.error = "Correo no registrado. Usa uno de prueba o elige un rol."
-            etCorreo.requestFocus()
-            return
-        }
+        cambiarEstadoCarga(true)
+        AuthRepositorio.iniciarSesion(correo, clave) { resultado ->
+            // Si la pantalla ya se cerró mientras esperaba, no se hace nada
+            if (isFinishing || isDestroyed) return@iniciarSesion
+            cambiarEstadoCarga(false)
 
-        terminarInicioDeSesion(correo, destino)
+            when (resultado) {
+                is ResultadoAuth.Exito ->
+                    terminarInicioDeSesion(correo, clave, AuthRepositorio.destinoPara(resultado.rol))
+                is ResultadoAuth.Error ->
+                    Toast.makeText(this, resultado.mensaje, Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
+    // Mientras Firebase responde, el botón cambia de texto y no se puede pulsar
+    private fun cambiarEstadoCarga(cargando: Boolean) {
+        enCurso = cargando
+        btnIniciar.isEnabled = !cargando
+        btnIniciar.text = if (cargando) "Ingresando…" else "Iniciar sesión"
+    }
 
+    // ---------- Acceso con huella ----------
+
+    // Cada vez que se ve el login se revisa si debe aparecer el botón de huella
     override fun onResume() {
         super.onResume()
         actualizarBotonBiometria()
     }
 
+    // El botón solo aparece si la huella está activada y el celular todavía la permite
     private fun actualizarBotonBiometria() {
         val bloque = findViewById<View>(R.id.bloqueBiometria)
         val correoActivado = BiometriaRepositorio.correoActivado(this)
@@ -140,7 +165,12 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun terminarInicioDeSesion(correo: String, destino: Class<*>) {
+    /**
+     * Después de iniciar sesión con contraseña: ofrece activar la huella (si el celular
+     * puede y esta cuenta aún no la tiene) y entra a la app. La contraseña se guarda
+     * cifrada y solo se puede abrir con la huella.
+     */
+    private fun terminarInicioDeSesion(correo: String, clave: String, destino: Class<*>) {
         val puedeOfrecer = BiometriaHelper.estado(this) == EstadoBiometria.DISPONIBLE &&
                 !BiometriaRepositorio.estaActivada(this, correo)
         if (!puedeOfrecer) {
@@ -154,7 +184,7 @@ class LoginActivity : AppCompatActivity() {
             .setCancelable(false)
             .setNegativeButton("Ahora no") { _, _ -> abrirInicio(destino) }
             .setPositiveButton("Activar") { _, _ ->
-                BiometriaHelper.activar(this, correo) { activada ->
+                BiometriaHelper.activar(this, correo, clave) { activada ->
                     if (activada) mensaje("Acceso con huella activado")
                     abrirInicio(destino)
                 }
@@ -162,17 +192,35 @@ class LoginActivity : AppCompatActivity() {
             .show()
     }
 
+    /**
+     * Entra con la huella: Android devuelve el correo y la contraseña guardados y con
+     * ellos se inicia sesión en Firebase. Si la contraseña cambió o la cuenta ya no
+     * existe, la huella se desactiva y se pide la contraseña.
+     */
     private fun entrarConBiometria() {
+        if (enCurso) return
+
         BiometriaHelper.entrar(
             this,
-            alEntrar = { correo ->
-                val destino = cuentasDePrueba[correo]
-                if (destino == null) {
-                    BiometriaRepositorio.desactivar(this)
-                    actualizarBotonBiometria()
-                    mensaje("Esa cuenta ya no existe. Inicia sesión con tu contraseña.")
-                } else {
-                    abrirInicio(destino)
+            alEntrar = { correo, clave ->
+                cambiarEstadoCarga(true)
+                AuthRepositorio.iniciarSesion(correo, clave) { resultado ->
+                    if (isFinishing || isDestroyed) return@iniciarSesion
+                    cambiarEstadoCarga(false)
+
+                    when (resultado) {
+                        is ResultadoAuth.Exito ->
+                            abrirInicio(AuthRepositorio.destinoPara(resultado.rol))
+                        is ResultadoAuth.Error -> {
+                            if (resultado.credencialesInvalidas) {
+                                BiometriaRepositorio.desactivar(this)
+                                actualizarBotonBiometria()
+                                mensaje("Tu contraseña cambió o la cuenta ya no existe. Inicia sesión con tu contraseña.")
+                            } else {
+                                mensaje(resultado.mensaje)
+                            }
+                        }
+                    }
                 }
             },
             alFallar = { actualizarBotonBiometria() }
@@ -192,6 +240,7 @@ class LoginActivity : AppCompatActivity() {
             .show()
     }
 
+    // Se cierra el login para que Atrás no regrese a él desde dentro de la app
     private fun abrirInicio(destino: Class<*>) {
         startActivity(Intent(this, destino))
         finish()

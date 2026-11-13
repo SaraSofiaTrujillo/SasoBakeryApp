@@ -130,7 +130,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="No te preocupes, escribe el correo de tu cuenta y te enviaremos un codigo de 6 digitos para crear una nueva."
+                        android:text="No te preocupes. Escribe el correo de tu cuenta y te enviaremos un enlace para crear una nueva contraseña."
                         android:textColor="#8A8494"
                         android:textSize="12sp" />
 
@@ -169,8 +169,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
-                        android:text="Enviar codigo"
-                        android:textColor="#FFFFFF"
+                        android:text="Enviar enlace"                        android:textColor="#FFFFFF"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -215,6 +214,7 @@
                         tools:text="Si el correo va***@gmail.com tiene una cuenta, le enviamos un codigo de 6 digitos." />
 
                     <TextView
+                        android:id="@+id/tvEtiquetaCodigo"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="22dp"

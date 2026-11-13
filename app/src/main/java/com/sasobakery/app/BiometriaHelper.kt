@@ -51,7 +51,16 @@ object BiometriaHelper {
         }
     }
 
-    fun activar(actividad: FragmentActivity, correo: String, alTerminar: (Boolean) -> Unit) {
+    /**
+     * Activa la huella para [correo]: pide la huella una vez y guarda la contraseña
+     * [clave] cifrada. [alTerminar] recibe true si quedó activada.
+     */
+    fun activar(
+        actividad: FragmentActivity,
+        correo: String,
+        clave: String,
+        alTerminar: (Boolean) -> Unit
+    ) {
         val cipher = BiometriaRepositorio.cifradoParaActivar()
         if (cipher == null) {
             avisar(actividad, "No pudimos preparar la huella en este celular.")
@@ -66,7 +75,7 @@ object BiometriaHelper {
             textoCancelar = "Cancelar",
             cipher = cipher,
             alAutenticar = { cipherListo ->
-                if (BiometriaRepositorio.guardar(actividad, correo, cipherListo)) {
+                if (BiometriaRepositorio.guardar(actividad, correo, clave, cipherListo)) {
                     alTerminar(true)
                 } else {
                     avisar(actividad, "No pudimos guardar el acceso con huella.")
@@ -80,12 +89,21 @@ object BiometriaHelper {
         )
     }
 
-    fun entrar(actividad: FragmentActivity, alEntrar: (String) -> Unit, alFallar: () -> Unit) {
+    /**
+     * Entra con la huella: si es correcta, llama a [alEntrar] con el correo y la
+     * contraseña guardados (la pantalla los usa para iniciar sesión en Firebase).
+     * Si no se puede o se cancela, llama a [alFallar] (el usuario usa su contraseña).
+     */
+    fun entrar(
+        actividad: FragmentActivity,
+        alEntrar: (String, String) -> Unit,
+        alFallar: () -> Unit
+    ) {
         val cipher = BiometriaRepositorio.cifradoParaEntrar(actividad)
         if (cipher == null) {
             avisar(
                 actividad,
-                "Tu huella cambio o ya no esta disponible. Inicia sesión con tu contraseña y vuelve a activarla."
+                "Tu huella cambió o ya no está disponible. Inicia sesión con tu contraseña y vuelve a activarla."
             )
             alFallar()
             return
@@ -98,14 +116,14 @@ object BiometriaHelper {
             textoCancelar = "Usar contraseña",
             cipher = cipher,
             alAutenticar = { cipherListo ->
-                val token = BiometriaRepositorio.leerToken(actividad, cipherListo)
+                val clave = BiometriaRepositorio.leerClave(actividad, cipherListo)
                 val correo = BiometriaRepositorio.correoActivado(actividad)
-                if (token == null || correo == null) {
+                if (clave == null || correo == null) {
                     BiometriaRepositorio.desactivar(actividad)
                     avisar(actividad, "No pudimos verificar tu acceso. Inicia sesión con tu contraseña.")
                     alFallar()
                 } else {
-                    alEntrar(correo)
+                    alEntrar(correo, clave)
                 }
             },
             alTerminarSinExito = { mensaje ->

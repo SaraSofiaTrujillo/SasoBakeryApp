@@ -25,7 +25,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Inicio de sesión -->
+        <!-- Inicio de sesion -->
         <activity
             android:name=".LoginActivity"
             android:exported="false" />
@@ -33,9 +33,15 @@
             android:name=".LoginActivity"
             android:exported="false" />
 
-        <!-- Recuperación de contraseña -->
+        <!-- Recuperar clave -->
         <activity
             android:name=".RecuperarClaveActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Registro de cuenta nueva (comprador o vendedor) -->
+        <activity
+            android:name=".RegistroActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 

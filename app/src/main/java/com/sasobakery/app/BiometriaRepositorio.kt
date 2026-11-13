@@ -9,6 +9,18 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+
+// Guarda y protege el "acceso con huella" en ESTE celular.
+//
+// Cómo funciona (esta parte la hace Android y no necesita servidor):
+//  1. Se crea una llave secreta dentro del Android Keystore (chip seguro del celular).
+//     Esa llave SOLO se puede usar después de que el usuario pone su huella.
+//  2. Con esa llave se cifra la contraseña de la cuenta y se guarda ya cifrada.
+//  3. Para entrar con huella, Android pide la huella; si es correcta, libera la llave,
+//     se descifra la contraseña y la app la usa para iniciar sesión en Firebase.
+//  Si el usuario registra una huella nueva en el celular, Android invalida la llave
+//  (así nadie puede agregar su huella y entrar a tu cuenta). Si la contraseña de la
+//  cuenta cambia, la huella se desactiva sola y hay que activarla de nuevo.
 object BiometriaRepositorio {
 
     private const val ARCHIVO = "saso_biometria"
@@ -38,9 +50,12 @@ object BiometriaRepositorio {
     } catch (e: Exception) {
         null
     }
-    fun guardar(contexto: Context, correo: String, cipher: Cipher): Boolean = try {
-        val token = "TOKEN_SIMULADO|${correo.trim().lowercase()}|${System.currentTimeMillis()}"
-        val cifrado = cipher.doFinal(token.toByteArray(Charsets.UTF_8))
+    /**
+     * Con el Cipher ya desbloqueado por la huella, cifra la contraseña de la cuenta
+     * y la guarda. Solo se puede descifrar de nuevo con la huella del dueño del celular.
+     */
+    fun guardar(contexto: Context, correo: String, clave: String, cipher: Cipher): Boolean = try {
+        val cifrado = cipher.doFinal(clave.toByteArray(Charsets.UTF_8))
         prefs(contexto).edit()
             .putString(CLAVE_CORREO, correo.trim().lowercase())
             .putString(CLAVE_TOKEN, aTexto(cifrado))
@@ -70,7 +85,8 @@ object BiometriaRepositorio {
         }
     }
 
-    fun leerToken(contexto: Context, cipher: Cipher): String? = try {
+    /** Con el Cipher ya desbloqueado por la huella, devuelve la contraseña guardada. */
+    fun leerClave(contexto: Context, cipher: Cipher): String? = try {
         val guardado = prefs(contexto).getString(CLAVE_TOKEN, null)
         if (guardado == null) null
         else String(cipher.doFinal(deTexto(guardado)), Charsets.UTF_8)

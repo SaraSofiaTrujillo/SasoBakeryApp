@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1086205013429",
+    "project_id": "sasobakeryapp",
+    "storage_bucket": "sasobakeryapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1086205013429:android:961e40de03f9c352543dfc",
+        "android_client_info": {
+          "package_name": "com.sasobakery.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDll_-gtqLSkXBqVqmALGOiVQQ3nw3E_c4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

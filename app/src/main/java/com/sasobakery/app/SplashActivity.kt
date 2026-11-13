@@ -77,9 +77,33 @@ class SplashActivity : AppCompatActivity() {
     }
 
     @Suppress("DEPRECATION")
+    /**
+     * Se ejecuta al terminar el splash. Si hay una sesión guardada, consulta el rol
+     * y abre su pantalla principal; si no hay sesión (o la cuenta ya no es válida),
+     * abre el login.
+     */
     private fun abrirLogin() {
-        startActivity(Intent(this, LoginActivity::class.java))
+        if (!AuthRepositorio.haySesion()) {
+            irA(LoginActivity::class.java)
+            return
+        }
+        AuthRepositorio.rolDeSesionActual { resultado ->
+            if (isFinishing || isDestroyed) return@rolDeSesionActual
+            val destino = if (resultado is ResultadoAuth.Exito) {
+                AuthRepositorio.destinoPara(resultado.rol)
+            } else {
+                LoginActivity::class.java
+            }
+            irA(destino)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun irA(destino: Class<*>) {
+        startActivity(Intent(this, destino))
+        // Fundido suave hacia la siguiente pantalla
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        // Se cierra para que "Atrás" salga de la app y no vuelva al splash
         finish()
     }
 
