@@ -14,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 
 enum class FiltroStock(val etiqueta: String) {
     TODOS("Todos los estados"),
@@ -24,6 +25,7 @@ enum class FiltroStock(val etiqueta: String) {
 class ProductosInventarioActivity : AppCompatActivity() {
 
     private var productos: List<ProductoInventario> = InventarioRepositorio.obtenerTodos()
+    private var registro: ListenerRegistration? = null
 
     private val adapter = InventarioAdapter { producto -> abrirFormulario(producto.id) }
     private var categoriaActual: String? = null // null = Todos
@@ -80,7 +82,7 @@ class ProductosInventarioActivity : AppCompatActivity() {
             refrescar()
         }
 
-        findViewById<View>(R.id.btnNuevo).setOnClickListener { abrirFormulario(0) }
+        findViewById<View>(R.id.btnNuevo).setOnClickListener { abrirFormulario("") }
 
         findViewById<View>(R.id.navResumen).setOnClickListener { finish() }
         // "Pedidos" abre la gestión de pedidos y "Más" abre el perfil del vendedor
@@ -95,13 +97,26 @@ class ProductosInventarioActivity : AppCompatActivity() {
         refrescar()
     }
 
-    override fun onResume() {
-        super.onResume()
-        productos = InventarioRepositorio.obtenerTodos()
-        refrescar()
+    // Escucha Firestore mientras la lista está visible: si se crea o edita un
+    // producto, la lista se actualiza sola al volver del formulario.
+    override fun onStart() {
+        super.onStart()
+        registro = InventarioRepositorio.escuchar(
+            alCambiar = { lista ->
+                productos = lista
+                refrescar()
+            },
+            alFallar = { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
+        )
     }
 
-    private fun abrirFormulario(id: Int) {
+    override fun onStop() {
+        super.onStop()
+        registro?.remove()
+        registro = null
+    }
+
+    private fun abrirFormulario(id: String) {
         val intent = Intent(this, ProductoFormularioActivity::class.java)
         intent.putExtra(ProductoFormularioActivity.EXTRA_PRODUCTO_ID, id)
         startActivity(intent)

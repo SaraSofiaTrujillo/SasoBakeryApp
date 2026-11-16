@@ -10,6 +10,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 
 class FavoritosCompradorActivity : AppCompatActivity() {
 
@@ -20,7 +21,7 @@ class FavoritosCompradorActivity : AppCompatActivity() {
     )
 
     private lateinit var tvVacio: View
-
+    private var registro: ListenerRegistration? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -42,6 +43,25 @@ class FavoritosCompradorActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        refrescar()
+    }
+
+    // Escucha los productos de Firestore mientras esta pantalla está visible
+    override fun onStart() {
+        super.onStart()
+        registro = InventarioRepositorio.escuchar(
+            alCambiar = { refrescar() },
+            alFallar = { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registro?.remove()
+        registro = null
+    }
+
+    private fun refrescar() {
         val lista = InventarioRepositorio.obtenerCatalogo()
             .filter { FavoritosRepositorio.esFavorito(it.id) }
         adapter.submit(lista)

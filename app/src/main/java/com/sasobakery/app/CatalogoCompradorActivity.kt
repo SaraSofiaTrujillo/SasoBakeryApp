@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 
 class CatalogoCompradorActivity : AppCompatActivity() {
 
@@ -26,6 +27,7 @@ class CatalogoCompradorActivity : AppCompatActivity() {
 
     private var categoriaActual: String? = null // null = Todo
     private var mostrarTodo = false // true = "Ver todas" (todo el catálogo)
+    private var registro: ListenerRegistration? = null
 
     private lateinit var scroll: ScrollView
     private lateinit var scrollChips: View
@@ -101,7 +103,6 @@ class CatalogoCompradorActivity : AppCompatActivity() {
 
         // Menú inferior
         findViewById<View>(R.id.navInicio).setOnClickListener { scroll.smoothScrollTo(0, 0) }
-        findViewById<View>(R.id.navCategorias).setOnClickListener { irALosChips() }
         findViewById<View>(R.id.navPerfil).setOnClickListener {
             startActivity(android.content.Intent(this, PerfilCompradorActivity::class.java))
         }
@@ -111,6 +112,27 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvSaludo).text =
             "Hola, ${PerfilCompradorRepositorio.obtener().nombre.substringBefore(" ")}"
         refrescar()
+        PerfilCompradorRepositorio.cargarDeSesion {
+            if (!isFinishing && !isDestroyed) {
+                findViewById<TextView>(R.id.tvSaludo).text =
+                    "Hola, ${PerfilCompradorRepositorio.obtener().nombre.substringBefore(" ")}"
+            }
+        }
+    }
+
+    // Escucha los productos de Firestore mientras el catálogo está visible
+    override fun onStart() {
+        super.onStart()
+        registro = InventarioRepositorio.escuchar(
+            alCambiar = { refrescar() },
+            alFallar = { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registro?.remove()
+        registro = null
     }
 
     private fun refrescar() {

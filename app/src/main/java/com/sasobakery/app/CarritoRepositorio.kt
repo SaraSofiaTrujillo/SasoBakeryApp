@@ -15,11 +15,12 @@ enum class ResultadoAgregar {
 
 object CarritoRepositorio {
 
-    private val cantidades = linkedMapOf<Int, Int>()
+    // id del producto -> cantidad en el carrito
+    private val cantidades = linkedMapOf<String, Int>()
 
-    fun agregar(idProducto: Int): ResultadoAgregar = agregar(idProducto, 1)
+    fun agregar(idProducto: String): ResultadoAgregar = agregar(idProducto, 1)
 
-    fun agregar(idProducto: Int, cantidad: Int): ResultadoAgregar {
+    fun agregar(idProducto: String, cantidad: Int): ResultadoAgregar {
         val producto = InventarioRepositorio.buscarPorId(idProducto)
         if (producto == null || !producto.disponible) return ResultadoAgregar.NO_DISPONIBLE
         if (producto.stock <= 0) return ResultadoAgregar.AGOTADO
@@ -32,16 +33,16 @@ object CarritoRepositorio {
         return ResultadoAgregar.AGREGADO
     }
 
-    fun unidadesAgregables(idProducto: Int): Int {
+    fun unidadesAgregables(idProducto: String): Int {
         val producto = InventarioRepositorio.buscarPorId(idProducto) ?: return 0
         if (!producto.disponible) return 0
         return (producto.stock - cantidadDe(idProducto)).coerceAtLeast(0)
     }
-    fun disminuir(idProducto: Int) {
+    fun disminuir(idProducto: String) {
         val actual = cantidades[idProducto] ?: return
         if (actual <= 1) cantidades.remove(idProducto) else cantidades[idProducto] = actual - 1
     }
-    fun quitar(idProducto: Int) {
+    fun quitar(idProducto: String) {
         cantidades.remove(idProducto)
     }
 
@@ -49,7 +50,7 @@ object CarritoRepositorio {
         cantidades.clear()
     }
 
-    fun cantidadDe(idProducto: Int): Int = cantidades[idProducto] ?: 0
+    fun cantidadDe(idProducto: String): Int = cantidades[idProducto] ?: 0
 
     fun cantidadTotal(): Int = cantidades.values.sum()
 

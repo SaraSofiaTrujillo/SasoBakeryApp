@@ -55,13 +55,15 @@ class PerfilCompradorActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnEditarPerfil).setOnClickListener { mostrarEditar() }
 
         findViewById<View>(R.id.navInicio).setOnClickListener { irAlCatalogo() }
-        findViewById<View>(R.id.navCategorias).setOnClickListener { irAlCatalogo() }
         findViewById<View>(R.id.navCarrito).setOnClickListener { irAlCarrito() }
     }
 
     override fun onResume() {
         super.onResume()
         mostrarPerfil()
+        PerfilCompradorRepositorio.cargarDeSesion {
+            if (!isFinishing && !isDestroyed) mostrarPerfil()
+        }
     }
 
     private fun crearFilas() {

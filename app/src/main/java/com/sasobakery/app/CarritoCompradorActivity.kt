@@ -70,7 +70,6 @@ class CarritoCompradorActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnVerProductos).setOnClickListener { finish() }
         findViewById<View>(R.id.navInicio).setOnClickListener { finish() }
-        findViewById<View>(R.id.navCategorias).setOnClickListener { finish() }
     }
 
     override fun onResume() {

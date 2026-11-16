@@ -25,11 +25,13 @@ data class ProductoInventario(
     val precio: Int,
     val stock: Int,
     @DrawableRes val imagen: Int? = null,
-    val id: Int = 0,
+    val id: String = "",
     val descripcion: String = "",
     val disponible: Boolean = true,
     val porciones: Int = 1,
-    val imagenUri: String? = null
+    val imagenUri: String? = null, // foto elegida de la galería
+    val destacado: Boolean = false, // aparece en "Favoritos de Saso" del comprador
+    val imagenBase64: String? = null // foto del producto como texto Base64 (se guarda en Firestore)
 ) {
 
     val nivel: NivelStock
@@ -76,23 +78,16 @@ class InventarioAdapter(
         val p = items[position]
         holder.tvNombre.text = p.nombre
         holder.tvDetalle.text = "${p.categoria} · \$ ${formatoPrecio(p.precio)}"
-        holder.tvStock.text = p.textoStock
-        holder.tvStock.setTextColor(Color.parseColor(p.nivel.color))
-
-        if (p.imagenUri != null) {
-            holder.ivFoto.setPadding(0, 0, 0, 0)
-            holder.ivFoto.imageTintList = null
-            holder.ivFoto.setImageURI(Uri.parse(p.imagenUri))
-        } else if (p.imagen != null) {
-            holder.ivFoto.setPadding(0, 0, 0, 0)
-            holder.ivFoto.imageTintList = null
-            holder.ivFoto.setImageResource(p.imagen)
+        if (p.disponible) {
+            holder.tvStock.text = p.textoStock
+            holder.tvStock.setTextColor(Color.parseColor(p.nivel.color))
         } else {
-            val pad = (12 * holder.itemView.resources.displayMetrics.density).toInt()
-            holder.ivFoto.setPadding(pad, pad, pad, pad)
-            holder.ivFoto.setImageResource(R.drawable.ic_box)
-            holder.ivFoto.imageTintList = ColorStateList.valueOf(Color.parseColor("#7B5EA7"))
+            // Producto desactivado: el comprador no lo ve, pero el vendedor sí
+            holder.tvStock.text = "Desactivado"
+            holder.tvStock.setTextColor(Color.parseColor("#8A8394"))
         }
+
+        holder.ivFoto.mostrarFotoProducto(p, 12)
 
         holder.btnMas.setOnClickListener { onMasClick(p) }
     }

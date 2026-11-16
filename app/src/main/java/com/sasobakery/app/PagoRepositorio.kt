@@ -113,7 +113,7 @@ object PagoRepositorio {
 
         val pedido = PedidoGestion(
             codigo = PedidosVendedorRepositorio.siguienteCodigo(),
-            cliente = PedidosVendedorRepositorio.COMPRADOR_DE_PRUEBA,
+            cliente = PerfilCompradorRepositorio.obtener().nombre,
             fecha = "Hoy, $hora",
             horario = EntregaRepositorio.horario,
             tipo = EntregaRepositorio.tipo,

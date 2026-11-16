@@ -29,11 +29,12 @@ class ProductoFormularioActivity : AppCompatActivity() {
 
     private val opcionesPorciones = listOf(1, 2, 4, 6, 8, 10, 12, 16, 20)
 
-    private var productoId = 0 // 0 = producto nuevo
+    private var productoId = "" // vacío = producto nuevo
+    private var enCurso = false // evita guardar dos veces mientras Firebase responde
     private var productoOriginal: ProductoInventario? = null
     private var categoriaActual = "Tortas"
     private var porcionesActual = 10
-    private var imagenUri: String? = null // foto nueva elegida de la galería
+    private var imagenNueva: String? = null // foto nueva elegida, ya convertida a Base64
 
     private lateinit var ivFoto: ImageView
     private lateinit var etNombre: EditText
@@ -41,18 +42,26 @@ class ProductoFormularioActivity : AppCompatActivity() {
     private lateinit var etPrecio: EditText
     private lateinit var tvCategoria: TextView
     private lateinit var switchDisponible: MaterialSwitch
+    private lateinit var switchDestacado: MaterialSwitch
     private lateinit var etStock: EditText
     private lateinit var tvPorciones: TextView
 
+    // Abre la galería; la foto elegida se reduce y se convierte a Base64 en segundo plano
     private val elegirFoto = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
-            val guardada = copiarFoto(uri)
-            if (guardada != null) {
-                imagenUri = guardada
-                mostrarFoto()
-            } else {
-                Toast.makeText(this, "No se pudo cargar la foto", Toast.LENGTH_SHORT).show()
-            }
+            Toast.makeText(this, "Procesando foto…", Toast.LENGTH_SHORT).show()
+            Thread {
+                val base64 = ImagenBase64.desdeUri(this, uri)
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    if (base64 != null) {
+                        imagenNueva = base64
+                        mostrarFoto()
+                    } else {
+                        Toast.makeText(this, "No se pudo cargar la foto", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }.start()
         }
     }
 
@@ -75,18 +84,25 @@ class ProductoFormularioActivity : AppCompatActivity() {
         etPrecio = findViewById(R.id.etPrecio)
         tvCategoria = findViewById(R.id.tvCategoria)
         switchDisponible = findViewById(R.id.switchDisponible)
+        switchDestacado = findViewById(R.id.switchDestacado)
         etStock = findViewById(R.id.etStock)
         tvPorciones = findViewById(R.id.tvPorciones)
 
         colorearInterruptor()
 
-        productoId = intent.getIntExtra(EXTRA_PRODUCTO_ID, 0)
-        productoOriginal = InventarioRepositorio.buscarPorId(productoId)
-        if (productoOriginal != null) {
-            llenarCampos(productoOriginal!!)
-        } else {
-            productoId = 0
+        productoId = intent.getStringExtra(EXTRA_PRODUCTO_ID).orEmpty()
+        if (productoId.isEmpty()) {
             prepararNuevo()
+        } else {
+            val existente = InventarioRepositorio.buscarPorId(productoId)
+            if (existente == null) {
+                // Si no lo encuentra, cierra la pantalla para no crear un duplicado por error
+                Toast.makeText(this, "Ese producto ya no existe", Toast.LENGTH_SHORT).show()
+                finish()
+                return
+            }
+            productoOriginal = existente
+            llenarCampos(existente)
         }
         mostrarFoto()
 
@@ -107,6 +123,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
         etPrecio.setText(p.precio.toString())
         etStock.setText(p.stock.toString())
         switchDisponible.isChecked = p.disponible
+        switchDestacado.isChecked = p.destacado
 
         categoriaActual = p.categoria
         tvCategoria.text = categoriaActual
@@ -119,6 +136,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.btnGuardar).text = "Crear producto"
 
         switchDisponible.isChecked = true
+        switchDestacado.isChecked = false
         categoriaActual = InventarioRepositorio.categorias.first()
         tvCategoria.text = categoriaActual
         porcionesActual = 10
@@ -130,66 +148,25 @@ class ProductoFormularioActivity : AppCompatActivity() {
             intArrayOf(android.R.attr.state_checked),
             intArrayOf()
         )
-        switchDisponible.trackTintList = ColorStateList(
-            estados,
-            intArrayOf(0xFF7B5EA7.toInt(), 0xFFE6DDF5.toInt())
-        )
-        switchDisponible.thumbTintList = ColorStateList(
-            estados,
-            intArrayOf(0xFFFFFFFF.toInt(), 0xFF8A8494.toInt())
-        )
+        listOf(switchDisponible, switchDestacado).forEach { interruptor ->
+            interruptor.trackTintList = ColorStateList(
+                estados,
+                intArrayOf(0xFF7B5EA7.toInt(), 0xFFE6DDF5.toInt())
+            )
+            interruptor.thumbTintList = ColorStateList(
+                estados,
+                intArrayOf(0xFFFFFFFF.toInt(), 0xFF8A8494.toInt())
+            )
+        }
     }
-
 
     private fun mostrarFoto() {
-        val uri = imagenUri ?: productoOriginal?.imagenUri
-        val recurso = productoOriginal?.imagen
-
-        when {
-            uri != null -> {
-                ivFoto.setPadding(0, 0, 0, 0)
-                ivFoto.imageTintList = null
-                ivFoto.setImageURI(Uri.parse(uri))
-            }
-            recurso != null -> {
-                ivFoto.setPadding(0, 0, 0, 0)
-                ivFoto.imageTintList = null
-                ivFoto.setImageResource(recurso)
-            }
-            else -> {
-                // Sin foto: icono provisional
-                val pad = (64 * resources.displayMetrics.density).toInt()
-                ivFoto.setPadding(pad, pad, pad, pad)
-                ivFoto.setImageResource(R.drawable.ic_box)
-                ivFoto.imageTintList = ColorStateList.valueOf(Color.parseColor("#7B5EA7"))
-            }
-        }
+        ivFoto.mostrarFotoDesde(
+            imagenNueva ?: productoOriginal?.imagenBase64,
+            productoOriginal?.imagen,
+            64
+        )
     }
-
-
-    private fun copiarFoto(uri: Uri): String? {
-        return try {
-            val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, medidas) }
-
-            var reduccion = 1
-            while (medidas.outWidth / reduccion > 1024 || medidas.outHeight / reduccion > 1024) {
-                reduccion *= 2
-            }
-
-            val opciones = BitmapFactory.Options().apply { inSampleSize = reduccion }
-            val bitmap = contentResolver.openInputStream(uri)?.use {
-                BitmapFactory.decodeStream(it, null, opciones)
-            } ?: return null
-
-            val archivo = File(filesDir, "producto_${System.currentTimeMillis()}.jpg")
-            FileOutputStream(archivo).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }
-            Uri.fromFile(archivo).toString()
-        } catch (e: Exception) {
-            null
-        }
-    }
-
 
     private fun mostrarMenuCategorias() {
         val menu = PopupMenu(this, tvCategoria)
@@ -225,6 +202,8 @@ class ProductoFormularioActivity : AppCompatActivity() {
 
 
     private fun guardar() {
+        if (enCurso) return
+
         val nombre = etNombre.text.toString().trim()
         if (nombre.isEmpty()) {
             etNombre.error = "Escribe el nombre del producto"
@@ -247,16 +226,41 @@ class ProductoFormularioActivity : AppCompatActivity() {
             precio = precio,
             stock = stock,
             imagen = productoOriginal?.imagen,
-            id = productoId, // 0 = nuevo; otro número = reemplaza al existente
+            id = productoId, // vacío = nuevo; con texto = actualiza ese producto
             descripcion = etDescripcion.text.toString().trim(),
             disponible = switchDisponible.isChecked,
+            destacado = switchDestacado.isChecked,
             porciones = porcionesActual,
-            imagenUri = imagenUri ?: productoOriginal?.imagenUri
+            imagenBase64 = imagenNueva ?: productoOriginal?.imagenBase64
         )
-        InventarioRepositorio.guardar(producto)
 
-        val mensaje = if (productoId == 0) "Producto creado" else "Cambios guardados"
-        Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
-        finish()
+        val esNuevo = productoId.isEmpty()
+        cambiarEstadoCarga(true)
+        InventarioRepositorio.guardar(producto) { error ->
+            // Si la pantalla ya se cerró mientras esperaba, no se hace nada
+            if (!isFinishing && !isDestroyed) {
+                cambiarEstadoCarga(false)
+                if (error != null) {
+                    Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+                } else {
+                    val mensaje = if (esNuevo) "Producto creado" else "Cambios guardados"
+                    Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            }
+        }
+    }
+
+    // Mientras Firebase responde, los botones se bloquean y el texto cambia
+    private fun cambiarEstadoCarga(cargando: Boolean) {
+        enCurso = cargando
+        val boton = findViewById<TextView>(R.id.btnGuardar)
+        boton.isEnabled = !cargando
+        findViewById<View>(R.id.btnGuardarTop).isEnabled = !cargando
+        boton.text = when {
+            cargando -> "Guardando…"
+            productoId.isEmpty() -> "Crear producto"
+            else -> "Guardar cambios"
+        }
     }
 }

@@ -2,11 +2,11 @@ package com.sasobakery.app
 
 object FavoritosRepositorio {
 
-    private val ids = mutableSetOf<Int>()
+    private val ids = mutableSetOf<String>()
 
-    fun esFavorito(idProducto: Int): Boolean = ids.contains(idProducto)
+    fun esFavorito(idProducto: String): Boolean = ids.contains(idProducto)
 
-    fun alternar(idProducto: Int): Boolean {
+    fun alternar(idProducto: String): Boolean {
         return if (ids.remove(idProducto)) {
             false
         } else {
@@ -15,5 +15,5 @@ object FavoritosRepositorio {
         }
     }
 
-    fun obtenerIds(): Set<Int> = ids.toSet()
+    fun obtenerIds(): Set<String> = ids.toSet()
 }

@@ -50,6 +50,9 @@ class VendedorPrincipalActivity : AppCompatActivity() {
         }
 
         mostrarEncabezado()
+        PerfilVendedorRepositorio.cargarDeSesion {
+            if (!isFinishing && !isDestroyed) mostrarEncabezado()
+        }
         mostrarEstadisticas()
         mostrarPedidos()
         configurarBotones()
@@ -63,7 +66,8 @@ class VendedorPrincipalActivity : AppCompatActivity() {
             else -> "Buenas noches,"
         }
         findViewById<TextView>(R.id.tvSaludo).text = saludo
-        findViewById<TextView>(R.id.tvNombre).text = nombreVendedor
+        findViewById<TextView>(R.id.tvNombre).text =
+            PerfilVendedorRepositorio.obtener().nombre.substringBefore(" ")
     }
 
     private fun mostrarEstadisticas() {

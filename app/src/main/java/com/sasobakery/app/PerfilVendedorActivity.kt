@@ -45,6 +45,9 @@ class PerfilVendedorActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         mostrarPerfil()
+        PerfilVendedorRepositorio.cargarDeSesion {
+            if (!isFinishing && !isDestroyed) mostrarPerfil()
+        }
     }
 
     private fun mostrarPerfil() {

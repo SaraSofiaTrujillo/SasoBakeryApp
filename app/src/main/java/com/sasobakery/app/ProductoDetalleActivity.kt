@@ -11,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.firestore.ListenerRegistration
 
 class ProductoDetalleActivity : AppCompatActivity() {
 
@@ -18,8 +19,9 @@ class ProductoDetalleActivity : AppCompatActivity() {
         const val EXTRA_PRODUCTO_ID = "producto_id"
     }
 
-    private var idProducto = 0
+    private var idProducto = ""
     private var cantidad = 1
+    private var registro: ListenerRegistration? = null
 
     private lateinit var ivFoto: ImageView
     private lateinit var ivCorazon: ImageView
@@ -38,7 +40,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        idProducto = intent.getIntExtra(EXTRA_PRODUCTO_ID, 0)
+        idProducto = intent.getStringExtra(EXTRA_PRODUCTO_ID).orEmpty()
         val producto = InventarioRepositorio.buscarPorId(idProducto)
         if (producto == null || !producto.disponible) {
             Toast.makeText(this, "Este producto ya no está disponible", Toast.LENGTH_SHORT).show()
@@ -99,6 +101,32 @@ class ProductoDetalleActivity : AppCompatActivity() {
         actualizarVista()
     }
 
+    // Mientras se ve el detalle, escucha Firestore: si cambia el stock se actualiza,
+    // y si el vendedor desactiva el producto la pantalla se cierra.
+    override fun onStart() {
+        super.onStart()
+        registro = InventarioRepositorio.escuchar(
+            alCambiar = {
+                if (!isFinishing && ::ivFoto.isInitialized) {
+                    val p = InventarioRepositorio.buscarPorId(idProducto)
+                    if (p == null || !p.disponible) {
+                        mensaje("Este producto ya no está disponible")
+                        finish()
+                    } else {
+                        actualizarVista()
+                    }
+                }
+            },
+            alFallar = { mensaje(it) }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registro?.remove()
+        registro = null
+    }
+
     private fun actualizarVista() {
         val p = InventarioRepositorio.buscarPorId(idProducto)
         if (p == null) {
@@ -107,7 +135,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
         }
 
         ivFoto.mostrarFotoProducto(p, 80)
-        val sinFoto = p.imagenUri == null && p.imagen == null
+        val sinFoto = p.imagenBase64 == null && p.imagen == null
         ivFoto.scaleType =
             if (sinFoto) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP
 

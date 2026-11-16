@@ -402,33 +402,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/navCategorias"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_grid"
-                android:tint="#8A8494" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Categorías"
-                android:textColor="#8A8494"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <LinearLayout
             android:id="@+id/navCarrito"
             android:layout_width="0dp"
             android:layout_height="match_parent"
