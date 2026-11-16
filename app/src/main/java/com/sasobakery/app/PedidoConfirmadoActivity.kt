@@ -155,9 +155,8 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
             tvDireccionEtiqueta.text = "DIRECCIÓN DE ENTREGA"
             tvDireccion.text = p.direccion.ifBlank { "Sin dirección registrada" }
         } else {
-            val tienda = PerfilVendedorRepositorio.tienda()
             tvDireccionEtiqueta.text = "RECOGIDA EN TIENDA"
-            tvDireccion.text = "${tienda.negocio} · ${tienda.direccion}"
+            tvDireccion.text = "${p.negocioMostrado} · ${p.direccionTiendaMostrada}"
         }
     }
 
@@ -237,12 +236,14 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
 
 
     private fun mostrarAyuda() {
-        val tienda = PerfilVendedorRepositorio.tienda()
+        val pedido = PedidosVendedorRepositorio.buscarPorCodigo(codigo)
+        val negocio = pedido?.negocioMostrado ?: PerfilVendedorRepositorio.tienda().negocio
+        val telefono = pedido?.telefonoMostrado ?: PerfilVendedorRepositorio.tienda().telefono
         MaterialAlertDialogBuilder(this)
             .setTitle("¿Necesitas ayuda?")
-            .setMessage("Comunícate con ${tienda.negocio} al ${tienda.telefono} y menciona tu pedido $codigo.")
+            .setMessage("Comunícate con $negocio al $telefono y menciona tu pedido $codigo.")
             .setPositiveButton("Llamar") { _, _ ->
-                val numero = tienda.telefono.filter { it.isDigit() || it == '+' }
+                val numero = telefono.filter { it.isDigit() || it == '+' }
                 try {
                     startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$numero")))
                 } catch (e: Exception) {
@@ -252,6 +253,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
             .setNegativeButton("Cerrar", null)
             .show()
     }
+
 
     private fun salir() {
         if (desdeCompra) {

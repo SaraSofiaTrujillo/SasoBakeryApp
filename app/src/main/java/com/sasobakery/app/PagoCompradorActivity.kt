@@ -27,6 +27,7 @@ class PagoCompradorActivity : AppCompatActivity() {
     private lateinit var tvResumenEnvio: TextView
     private lateinit var tvResumenTotal: TextView
     private lateinit var btnPagar: TextView
+    private var enCurso = false // evita crear dos pedidos si se toca "Pagar" dos veces
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -119,20 +120,34 @@ class PagoCompradorActivity : AppCompatActivity() {
 
 
     private fun pagar() {
+        if (enCurso) return
+        // Si ya se pagó (carrito vacío), un segundo toque no hace nada
         if (CarritoRepositorio.cantidadTotal() == 0) return
 
         PagoRepositorio.idSeleccionado = PagoRepositorio.metodoElegido().id
 
-        val pedido = PagoRepositorio.confirmarPedido()
-        if (pedido == null) {
-            mensaje(PagoRepositorio.mensajeError ?: "No se pudo crear el pedido")
-            return
-        }
+        enCurso = true
+        mensaje("Procesando tu pedido…")
 
-        val intent = android.content.Intent(this, PedidoConfirmadoActivity::class.java)
-        intent.putExtra(PedidoConfirmadoActivity.EXTRA_CODIGO, pedido.codigo)
-        intent.putExtra(PedidoConfirmadoActivity.EXTRA_DESDE_COMPRA, true)
-        startActivity(intent)
+        // Crea el pedido en Firestore, descuenta el stock y vacía el carrito
+        PagoRepositorio.confirmarPedido { pedido ->
+            enCurso = false
+            if (isFinishing || isDestroyed) return@confirmarPedido
+
+            if (pedido == null) {
+                Toast.makeText(
+                    this,
+                    PagoRepositorio.mensajeError ?: "No se pudo crear el pedido",
+                    Toast.LENGTH_LONG
+                ).show()
+                return@confirmarPedido
+            }
+
+            val intent = android.content.Intent(this, PedidoConfirmadoActivity::class.java)
+            intent.putExtra(PedidoConfirmadoActivity.EXTRA_CODIGO, pedido.codigo)
+            intent.putExtra(PedidoConfirmadoActivity.EXTRA_DESDE_COMPRA, true)
+            startActivity(intent)
+        }
     }
 
     private fun mensaje(texto: String) {

@@ -25,10 +25,23 @@ data class PedidoGestion(
     val fechaEntrega: String = "",
     val direccion: String = "",
     val envio: Int = 0,
-    val metodoPago: String = ""
-) {
+    val metodoPago: String = "",
+    // Datos que llegan con el pedido guardado en Firestore
+    val id: String = "",              // id del documento en Firestore
+    val compradorUid: String = "",    // cuenta del comprador que hizo el pedido
+    val tiendaNombre: String = "",    // datos de contacto del negocio al momento de la compra
+    val tiendaTelefono: String = "",
+    val tiendaDireccion: String = "") {
     val total: Int get() = productos.sumOf { it.subtotal }
 
+    // Datos del negocio guardados con el pedido. Los pedidos de ejemplo no los tienen
+    // y usan los datos fijos de la tienda.
+    val negocioMostrado: String
+        get() = tiendaNombre.ifBlank { PerfilVendedorRepositorio.tienda().negocio }
+    val telefonoMostrado: String
+        get() = tiendaTelefono.ifBlank { PerfilVendedorRepositorio.tienda().telefono }
+    val direccionTiendaMostrada: String
+        get() = tiendaDireccion.ifBlank { PerfilVendedorRepositorio.tienda().direccion }
     val cantidadProductos: Int get() = productos.sumOf { it.cantidad }
 
     // "Torta Aurora x1, Galletas de casa x2"

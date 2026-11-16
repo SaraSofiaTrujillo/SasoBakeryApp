@@ -90,44 +90,57 @@ object PagoRepositorio {
     var mensajeError: String? = null
         private set
 
-    fun confirmarPedido(): PedidoGestion? {
+    /**
+     * Convierte el carrito en un pedido guardado en Firestore: crea el pedido, descuenta
+     * el stock y vacía el carrito. [alTerminar] recibe el pedido, o null si no se pudo
+     * (el motivo queda en [mensajeError]).
+     */
+    fun confirmarPedido(alTerminar: (PedidoGestion?) -> Unit) {
         mensajeError = null
 
         val items = CarritoRepositorio.obtenerItems()
         if (items.isEmpty()) {
             mensajeError = "Tu carrito está vacío"
-            return null
-        }
-
-        val sinStock = items.firstOrNull { it.cantidad > it.producto.stock }
-        if (sinStock != null) {
-            mensajeError = "Ya no hay suficiente stock de ${sinStock.producto.nombre}. Revisa tu carrito."
-            return null
+            alTerminar(null)
+            return
         }
 
         val domicilio = EntregaRepositorio.tipo == TipoEntrega.ENTREGA
         val metodo = metodoElegido()
+        val tienda = PerfilVendedorRepositorio.tienda()
         val ahora = Calendar.getInstance()
         val hora = "${ahora.get(Calendar.HOUR_OF_DAY)}:" +
                 String.format(java.util.Locale.US, "%02d", ahora.get(Calendar.MINUTE))
 
-        val pedido = PedidoGestion(
-            codigo = PedidosVendedorRepositorio.siguienteCodigo(),
+        // Datos que ya conoce la app. El código, el comprador y los productos con su
+        // precio real los completa PedidosRepositorio dentro de la transacción.
+        val base = PedidoGestion(
+            codigo = "",
             cliente = PerfilCompradorRepositorio.obtener().nombre,
             fecha = "Hoy, $hora",
             horario = EntregaRepositorio.horario,
             tipo = EntregaRepositorio.tipo,
-            productos = items.map { ProductoPedido(it.producto.nombre, it.cantidad, it.producto.precio) },
+            productos = emptyList(),
             estado = EstadoPedido.PENDIENTE,
             fechaEntrega = EntregaRepositorio.fechaElegida().texto,
             direccion = if (domicilio) EntregaRepositorio.direccion else "",
             envio = EntregaRepositorio.costoEnvio(),
-            metodoPago = if (metodo.tipo == TipoPago.TARJETA) "Tarjeta ${metodo.titulo}" else metodo.titulo
+            metodoPago = if (metodo.tipo == TipoPago.TARJETA) "Tarjeta ${metodo.titulo}" else metodo.titulo,
+            tiendaNombre = tienda.negocio,
+            tiendaTelefono = tienda.telefono,
+            tiendaDireccion = tienda.direccion
         )
 
-        items.forEach { InventarioRepositorio.descontarStock(it.producto.id, it.cantidad) }
-        PedidosVendedorRepositorio.agregar(pedido)
-        CarritoRepositorio.vaciar()
-        return pedido
+        PedidosRepositorio.crear(items, base) { pedido, error ->
+            if (pedido == null) {
+                mensajeError = error
+                alTerminar(null)
+                return@crear
+            }
+            // Transitorio: las pantallas de pedidos todavía leen la lista en memoria
+            PedidosVendedorRepositorio.agregar(pedido)
+            CarritoRepositorio.vaciar()
+            alTerminar(pedido)
+        }
     }
 }
