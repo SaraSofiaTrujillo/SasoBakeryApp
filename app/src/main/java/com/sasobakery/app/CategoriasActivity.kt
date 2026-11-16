@@ -10,15 +10,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 
 class CategoriasActivity : AppCompatActivity() {
 
-    private val categorias = listOf(
-        Categoria("Tortas", 8),
-        Categoria("Postres", 6),
-        Categoria("Brownies", 4),
-        Categoria("Galletas", 6)
-    )
+    private var registro: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,7 +29,7 @@ class CategoriasActivity : AppCompatActivity() {
 
         val rv = findViewById<RecyclerView>(R.id.rvCategorias)
         rv.layoutManager = LinearLayoutManager(this)
-        rv.adapter = CategoriasAdapter(categorias) { proximamente() }
+        rv.adapter = CategoriasAdapter(emptyList()) { proximamente() }
 
         findViewById<View>(R.id.btnMenu).setOnClickListener { proximamente() }
         findViewById<View>(R.id.btnNuevaCategoria).setOnClickListener { proximamente() }
@@ -50,6 +46,27 @@ class CategoriasActivity : AppCompatActivity() {
             startActivity(Intent(this, UsuariosRolesActivity::class.java))
             finish()
         }
+    }
+
+    // Cuenta los productos reales de cada categoría y se actualiza solo
+    override fun onStart() {
+        super.onStart()
+        registro = InventarioRepositorio.escuchar(
+            alCambiar = { productos ->
+                val categorias = InventarioRepositorio.categorias.map { nombre ->
+                    Categoria(nombre, productos.count { it.categoria == nombre })
+                }
+                findViewById<RecyclerView>(R.id.rvCategorias).adapter =
+                    CategoriasAdapter(categorias) { proximamente() }
+            },
+            alFallar = { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registro?.remove()
+        registro = null
     }
 
     private fun abrirProductos() {

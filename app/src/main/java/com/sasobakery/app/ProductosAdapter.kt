@@ -12,19 +12,24 @@ import androidx.annotation.DrawableRes
 import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 
+// Estado con el que el administrador ve cada producto
 enum class EstadoProducto(val etiqueta: String) {
     ACTIVO("Activo"),
-    STOCK_BAJO("Stock bajo")
+    STOCK_BAJO("Stock bajo"),
+    AGOTADO("Agotado"),
+    DESACTIVADO("Desactivado")
 }
 
 data class Producto(
     val nombre: String,
     val categoria: String,
-    val precio: Int,
+    val precio: Int, // pesos colombianos (COP)
     val estado: EstadoProducto,
-    @DrawableRes val imagen: Int? = null
+    @DrawableRes val imagen: Int? = null,
+    val imagenBase64: String? = null // foto guardada en Firestore
 )
 
+// 28000 -> "28.000"
 private fun formatoCop(valor: Int): String =
     String.format(Locale.US, "%,d", valor).replace(",", ".")
 
@@ -53,20 +58,15 @@ class ProductosAdapter(
         holder.tvDetalle.text = "${p.categoria} · \$ ${formatoCop(p.precio)}"
         holder.tvEstado.text = p.estado.etiqueta
 
-        if (p.imagen != null) {
-            holder.ivFoto.setPadding(0, 0, 0, 0)
-            holder.ivFoto.imageTintList = null
-            holder.ivFoto.setImageResource(p.imagen)
-        } else {
-            val pad = (12 * holder.itemView.resources.displayMetrics.density).toInt()
-            holder.ivFoto.setPadding(pad, pad, pad, pad)
-            holder.ivFoto.setImageResource(R.drawable.ic_box)
-            holder.ivFoto.imageTintList = ColorStateList.valueOf(Color.parseColor("#7B5EA7"))
-        }
+        // Foto de Firestore; si no hay, la del proyecto o un icono provisional
+        holder.ivFoto.mostrarFotoDesde(p.imagenBase64, p.imagen, 12)
 
+        // Colores de la etiqueta: fondo a texto
         val (fondo, texto) = when (p.estado) {
             EstadoProducto.ACTIVO -> "#DDF2E6" to "#3F7D5A"
             EstadoProducto.STOCK_BAJO -> "#FCEBD0" to "#B7791F"
+            EstadoProducto.AGOTADO -> "#FBE0E0" to "#B23A3A"
+            EstadoProducto.DESACTIVADO -> "#EFEAF5" to "#8A8494"
         }
         holder.tvEstado.backgroundTintList = ColorStateList.valueOf(Color.parseColor(fondo))
         holder.tvEstado.setTextColor(Color.parseColor(texto))

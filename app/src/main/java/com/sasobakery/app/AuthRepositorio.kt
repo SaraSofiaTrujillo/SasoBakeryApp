@@ -79,6 +79,7 @@ object AuthRepositorio {
         correo: String,
         clave: String,
         rol: Rol,
+        datosNegocio: Map<String, String> = emptyMap(), // solo los vendedores: teléfono, dirección, horario
         alTerminar: (ResultadoAuth) -> Unit
     ) {
         // Seguridad: el registro público nunca crea administradores
@@ -102,6 +103,7 @@ object AuthRepositorio {
                     "activo" to true,
                     "creado" to FieldValue.serverTimestamp()
                 )
+                perfil.putAll(datosNegocio) // los datos del negocio viajan en el mismo documento
                 db.collection(COLECCION_USUARIOS).document(usuario.uid).set(perfil)
                     .addOnSuccessListener {
                         rolActual = rol
@@ -138,7 +140,7 @@ object AuthRepositorio {
 
     /** Cierra la sesión en este celular. */
     fun cerrarSesion() {
-        rolActual = null
+        CarritoRepositorio.limpiarMemoria() // el carrito de esta cuenta no se le muestra a la siguiente
         auth.signOut()
     }
     // ---------- Invitar usuarios (solo administrador) ----------

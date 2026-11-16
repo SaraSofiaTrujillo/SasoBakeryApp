@@ -21,6 +21,9 @@ object InventarioRepositorio {
     // Última lista recibida de Firestore (se actualiza sola mientras hay una escucha activa)
     private var productos: List<ProductoInventario> = emptyList()
 
+    // true cuando ya llegó la lista real de Firestore (no solo una copia vacía del caché)
+    private var cargado = false
+
     /**
      * Escucha la lista de productos: [alCambiar] se llama una vez al empezar y de nuevo
      * cada vez que alguien crea o edita un producto. Hay que cancelar el
@@ -38,12 +41,16 @@ object InventarioRepositorio {
             productos = instantanea.documents
                 .map { aProducto(it) }
                 .sortedBy { it.nombre.lowercase() }
+            if (!instantanea.metadata.isFromCache || !instantanea.isEmpty) cargado = true
             alCambiar(productos)
         }
 
     // ---------- Consultas sobre la copia en memoria ----------
 
     fun obtenerTodos(): List<ProductoInventario> = productos
+
+    // ¿Ya llegaron los productos reales? Hasta entonces no conviene ajustar el carrito.
+    fun estaCargado(): Boolean = cargado
 
     fun buscarPorId(id: String): ProductoInventario? = productos.firstOrNull { it.id == id }
 

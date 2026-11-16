@@ -28,6 +28,10 @@ class RegistroActivity : AppCompatActivity() {
     private lateinit var etCorreo: EditText
     private lateinit var etClave: EditText
     private lateinit var etConfirmar: EditText
+    private lateinit var etTelefono: EditText
+    private lateinit var etDireccion: EditText
+    private lateinit var etHorario: EditText
+    private lateinit var bloqueNegocio: View
     private lateinit var btnCrear: TextView
     private lateinit var chips: List<Pair<TextView, Rol>>
 
@@ -55,6 +59,10 @@ class RegistroActivity : AppCompatActivity() {
         etClave = findViewById(R.id.etClave)
         etConfirmar = findViewById(R.id.etConfirmar)
         btnCrear = findViewById(R.id.btnCrearCuenta)
+        etTelefono = findViewById(R.id.etTelefono)
+        etDireccion = findViewById(R.id.etDireccion)
+        etHorario = findViewById(R.id.etHorario)
+        bloqueNegocio = findViewById(R.id.bloqueNegocio)
 
         // Botones "Mostrar / Ocultar" de las dos contraseñas
         val btnMostrarClave = findViewById<TextView>(R.id.btnMostrarClave)
@@ -103,6 +111,8 @@ class RegistroActivity : AppCompatActivity() {
                 chip.setTextColor(0xFF5D477F.toInt())
             }
         }
+        // Los datos del negocio solo se piden a los vendedores
+        bloqueNegocio.visibility = if (rolSeleccionado == Rol.VENDEDOR) View.VISIBLE else View.GONE
     }
 
     /** Valida los campos y, si todo está bien, crea la cuenta en Firebase. */
@@ -135,8 +145,40 @@ class RegistroActivity : AppCompatActivity() {
             return
         }
 
+        // Si se registra como vendedor, los datos del negocio son obligatorios
+        val telefono = etTelefono.text.toString().trim()
+        val direccion = etDireccion.text.toString().trim()
+        val horario = etHorario.text.toString().trim()
+        if (rolSeleccionado == Rol.VENDEDOR) {
+            if (telefono.filter { it.isDigit() }.length < 7) {
+                etTelefono.error = "Escribe un teléfono válido"
+                etTelefono.requestFocus()
+                return
+            }
+            if (direccion.length < 5) {
+                etDireccion.error = "Escribe la dirección de tu negocio"
+                etDireccion.requestFocus()
+                return
+            }
+            if (horario.isEmpty()) {
+                etHorario.error = "Escribe tu horario de atención"
+                etHorario.requestFocus()
+                return
+            }
+        }
+        val datosNegocio = if (rolSeleccionado == Rol.VENDEDOR) {
+            mapOf(
+                "negocio" to "Saso Bakery",
+                "telefono" to telefono,
+                "direccion" to direccion,
+                "horario" to horario
+            )
+        } else {
+            emptyMap()
+        }
+
         cambiarEstadoCarga(true)
-        AuthRepositorio.registrar(nombre, correo, clave, rolSeleccionado) { resultado ->
+        AuthRepositorio.registrar(nombre, correo, clave, rolSeleccionado, datosNegocio) { resultado ->
             // Si la pantalla ya se cerró mientras esperaba, no se hace nada
             if (isFinishing || isDestroyed) return@registrar
             cambiarEstadoCarga(false)

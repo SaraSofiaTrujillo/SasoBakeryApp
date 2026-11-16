@@ -59,11 +59,11 @@ class PerfilVendedorActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.tvDatoNombre).text = p.nombre
         findViewById<TextView>(R.id.tvDatoCorreo).text = p.correo
-        findViewById<TextView>(R.id.tvDatoTelefono).text = p.telefono
+        findViewById<TextView>(R.id.tvDatoTelefono).text = p.telefono.ifBlank { "Sin registrar" }
 
         findViewById<TextView>(R.id.tvDatoNegocio).text = p.negocio
-        findViewById<TextView>(R.id.tvDatoDireccion).text = p.direccion
-        findViewById<TextView>(R.id.tvDatoHorario).text = p.horario
+        findViewById<TextView>(R.id.tvDatoDireccion).text = p.direccion.ifBlank { "Sin registrar" }
+        findViewById<TextView>(R.id.tvDatoHorario).text = p.horario.ifBlank { "Sin registrar" }
     }
 
 

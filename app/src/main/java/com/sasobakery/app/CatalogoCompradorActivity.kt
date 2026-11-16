@@ -118,13 +118,20 @@ class CatalogoCompradorActivity : AppCompatActivity() {
                     "Hola, ${PerfilCompradorRepositorio.obtener().nombre.substringBefore(" ")}"
             }
         }
+        // Recupera el carrito guardado de esta cuenta y refresca el globito
+        CarritoRepositorio.cargarDeSesion {
+            if (!isFinishing && !isDestroyed) refrescar()
+        }
     }
 
     // Escucha los productos de Firestore mientras el catálogo está visible
     override fun onStart() {
         super.onStart()
         registro = InventarioRepositorio.escuchar(
-            alCambiar = { refrescar() },
+            alCambiar = {
+                CarritoRepositorio.reconciliar() // quita del carrito lo que ya no está disponible
+                refrescar()
+            },
             alFallar = { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
         )
     }

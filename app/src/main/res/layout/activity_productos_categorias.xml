@@ -157,9 +157,10 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvActivos"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="24"
+                        android:text="0"
                         android:textColor="#2E2340"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -185,9 +186,10 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvOcultos"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="2"
+                        android:text="0"
                         android:textColor="#2E2340"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -213,9 +215,10 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvStockBajo"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="3"
+                        android:text="0"
                         android:textColor="#2E2340"
                         android:textSize="18sp"
                         android:textStyle="bold" />

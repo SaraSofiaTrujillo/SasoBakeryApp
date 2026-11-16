@@ -107,7 +107,9 @@ class VendedorPrincipalActivity : AppCompatActivity() {
     private fun configurarBotones() {
         findViewById<View>(R.id.btnNotificaciones).setOnClickListener { proximamente() }
         findViewById<View>(R.id.tvVerTodos).setOnClickListener { abrirPedidos() }
-        findViewById<View>(R.id.btnNuevoProducto).setOnClickListener { proximamente() }
+        findViewById<View>(R.id.btnNuevoProducto).setOnClickListener {
+            startActivity(android.content.Intent(this, ProductoFormularioActivity::class.java))
+        }
         findViewById<View>(R.id.btnActualizarStock).setOnClickListener { proximamente() }
 
         findViewById<View>(R.id.navPedidos).setOnClickListener { abrirPedidos() }

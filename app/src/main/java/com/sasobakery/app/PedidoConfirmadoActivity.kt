@@ -155,7 +155,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
             tvDireccionEtiqueta.text = "DIRECCIÓN DE ENTREGA"
             tvDireccion.text = p.direccion.ifBlank { "Sin dirección registrada" }
         } else {
-            val tienda = PerfilVendedorRepositorio.obtener()
+            val tienda = PerfilVendedorRepositorio.tienda()
             tvDireccionEtiqueta.text = "RECOGIDA EN TIENDA"
             tvDireccion.text = "${tienda.negocio} · ${tienda.direccion}"
         }
@@ -237,7 +237,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
 
 
     private fun mostrarAyuda() {
-        val tienda = PerfilVendedorRepositorio.obtener()
+        val tienda = PerfilVendedorRepositorio.tienda()
         MaterialAlertDialogBuilder(this)
             .setTitle("¿Necesitas ayuda?")
             .setMessage("Comunícate con ${tienda.negocio} al ${tienda.telefono} y menciona tu pedido $codigo.")

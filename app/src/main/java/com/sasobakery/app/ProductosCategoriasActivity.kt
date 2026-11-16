@@ -12,15 +12,14 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import android.widget.TextView
+import com.google.firebase.firestore.ListenerRegistration
 
 class ProductosCategoriasActivity : AppCompatActivity() {
 
-    private val productos = listOf(
-        Producto("Torta Aurora", "Tortas", 68000, EstadoProducto.ACTIVO),
-        Producto("Cheesecake fresa", "Postres", 28000, EstadoProducto.ACTIVO),
-        Producto("Brownie intenso", "Brownies", 10000, EstadoProducto.STOCK_BAJO),
-        Producto("Galletas de casa", "Galletas", 14000, EstadoProducto.ACTIVO)
-    )
+    // Lista real: se llena con lo que llega de Firestore
+    private var productos: List<Producto> = emptyList()
+    private var registro: ListenerRegistration? = null
 
     private val adapter = ProductosAdapter()
     private lateinit var etBuscar: EditText
@@ -65,6 +64,50 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         }
 
         aplicarFiltro()
+    }
+
+    // Escucha Firestore mientras la pantalla se ve: si el vendedor crea, edita o
+    // desactiva un producto, esta lista y los contadores se actualizan solos.
+    override fun onStart() {
+        super.onStart()
+        registro = InventarioRepositorio.escuchar(
+            alCambiar = { lista ->
+                productos = lista.map { aProductoAdmin(it) }
+                actualizarEstadisticas(lista)
+                aplicarFiltro()
+            },
+            alFallar = { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registro?.remove()
+        registro = null
+    }
+
+    // Convierte un producto de Firestore en el que muestra esta lista
+    private fun aProductoAdmin(p: ProductoInventario) = Producto(
+        nombre = p.nombre,
+        categoria = p.categoria,
+        precio = p.precio,
+        estado = when {
+            !p.disponible -> EstadoProducto.DESACTIVADO
+            p.stock <= 0 -> EstadoProducto.AGOTADO
+            p.stock <= 5 -> EstadoProducto.STOCK_BAJO // mismo criterio que el inventario
+            else -> EstadoProducto.ACTIVO
+        },
+        imagen = p.imagen,
+        imagenBase64 = p.imagenBase64
+    )
+
+    // Activos = visibles en el catálogo; Ocultos = desactivados;
+    // Stock bajo = visibles con 5 unidades o menos (incluye agotados)
+    private fun actualizarEstadisticas(lista: List<ProductoInventario>) {
+        findViewById<TextView>(R.id.tvActivos).text = lista.count { it.disponible }.toString()
+        findViewById<TextView>(R.id.tvOcultos).text = lista.count { !it.disponible }.toString()
+        findViewById<TextView>(R.id.tvStockBajo).text =
+            lista.count { it.disponible && it.stock <= 5 }.toString()
     }
 
     private fun abrirCategorias() {

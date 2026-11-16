@@ -10,10 +10,12 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 
 class CarritoCompradorActivity : AppCompatActivity() {
 
     private var modoEdicion = false
+    private var registro: ListenerRegistration? = null
 
     private val adapter = CarritoAdapter(
         onMas = { sumar(it) },
@@ -75,6 +77,30 @@ class CarritoCompradorActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refrescar()
+    }
+
+    // Mientras se ve el carrito, escucha los productos reales: si cambia el precio o
+    // el stock se actualiza solo, y lo que ya no esté disponible se quita con un aviso.
+    override fun onStart() {
+        super.onStart()
+        CarritoRepositorio.cargarDeSesion {
+            if (!isFinishing && !isDestroyed) refrescar()
+        }
+        registro = InventarioRepositorio.escuchar(
+            alCambiar = {
+                if (CarritoRepositorio.reconciliar()) {
+                    mensaje("Actualizamos tu carrito según la disponibilidad de los productos")
+                }
+                refrescar()
+            },
+            alFallar = { mensaje(it) }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registro?.remove()
+        registro = null
     }
 
     private fun sumar(p: ProductoInventario) {
