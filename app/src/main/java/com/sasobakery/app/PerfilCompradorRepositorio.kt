@@ -30,6 +30,9 @@ object PerfilCompradorRepositorio {
 
     private var perfil = PerfilComprador(nombre = "", correo = "")
     private var uidCargado: String? = null // de qué cuenta es el perfil guardado en memoria
+    // Pedidos reales del comprador en sesión (los llena PerfilCompradorActivity al escucharlos)
+
+    private var pedidos: List<PedidoGestion> = emptyList()
 
     // Preferencia guardada (todavía no se envían avisos reales)
     var notificaciones = true
@@ -41,6 +44,7 @@ object PerfilCompradorRepositorio {
     fun obtener(): PerfilComprador {
         val usuario = FirebaseAuth.getInstance().currentUser
         if (usuario?.uid != uidCargado) {
+            pedidos = emptyList() // los pedidos en memoria eran de otra cuenta
             val correo = usuario?.email.orEmpty()
             perfil = PerfilComprador(nombre = correo.substringBefore("@"), correo = correo)
         }
@@ -78,10 +82,13 @@ object PerfilCompradorRepositorio {
             .update("nombre", nuevo.nombre)
     }
 
-    /** Pedidos del comprador en sesión (por ahora se reconocen por su nombre). */
-    fun misPedidos(): List<PedidoGestion> =
-        PedidosVendedorRepositorio.obtenerTodos()
-            .filter { it.cliente == obtener().nombre }
+    /** Recibe los pedidos reales que llegan de Firestore. */
+    fun actualizarPedidos(lista: List<PedidoGestion>) {
+        pedidos = lista
+    }
+
+    /** Pedidos del comprador en sesión. */
+    fun misPedidos(): List<PedidoGestion> = pedidos
 
     /** Pedidos que todavía no terminan: ni entregados ni cancelados. */
     fun pedidosActivos(): Int =

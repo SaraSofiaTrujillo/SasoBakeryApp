@@ -14,8 +14,15 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.firebase.firestore.ListenerRegistration
 
+/**
+ * Pantalla "Más" del vendedor: sus datos personales (editables: nombre y teléfono) y
+ * los datos del negocio, que se ven pero solo los modifica el administrador.
+ */
 class PerfilVendedorActivity : AppCompatActivity() {
+
+    private var registroNegocio: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,9 +35,11 @@ class PerfilVendedorActivity : AppCompatActivity() {
             insets
         }
 
+        // Botones principales
         findViewById<View>(R.id.btnEditar).setOnClickListener { mostrarEditar() }
         findViewById<View>(R.id.btnCerrarSesion).setOnClickListener { confirmarCerrarSesion() }
 
+        // Menú inferior: Más ya es esta pantalla
         findViewById<View>(R.id.navResumen).setOnClickListener { volverAlResumen() }
         findViewById<View>(R.id.navPedidos).setOnClickListener {
             startActivity(Intent(this, PedidosVendedorActivity::class.java))
@@ -42,12 +51,29 @@ class PerfilVendedorActivity : AppCompatActivity() {
         }
     }
 
+    // Cada vez que se vuelve a esta pantalla se leen de nuevo los datos personales
     override fun onResume() {
         super.onResume()
         mostrarPerfil()
         PerfilVendedorRepositorio.cargarDeSesion {
             if (!isFinishing && !isDestroyed) mostrarPerfil()
         }
+    }
+
+    // Mientras se ve la pantalla, escucha los datos del negocio: si el administrador
+    // los cambia, aquí se actualizan solos.
+    override fun onStart() {
+        super.onStart()
+        registroNegocio = NegocioRepositorio.escuchar(
+            alCambiar = { mostrarPerfil() },
+            alFallar = { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registroNegocio?.remove()
+        registroNegocio = null
     }
 
     private fun mostrarPerfil() {
@@ -59,13 +85,16 @@ class PerfilVendedorActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.tvDatoNombre).text = p.nombre
         findViewById<TextView>(R.id.tvDatoCorreo).text = p.correo
-        findViewById<TextView>(R.id.tvDatoTelefono).text = p.telefono.ifBlank { "Sin registrar" }
+        findViewById<TextView>(R.id.tvDatoTelefono).text =
+            if (p.telefono.isBlank()) "Sin registrar" else Telefono.mostrar(p.telefono)
 
+        // Datos del negocio (solo lectura)
         findViewById<TextView>(R.id.tvDatoNegocio).text = p.negocio
-        findViewById<TextView>(R.id.tvDatoDireccion).text = p.direccion.ifBlank { "Sin registrar" }
-        findViewById<TextView>(R.id.tvDatoHorario).text = p.horario.ifBlank { "Sin registrar" }
+        findViewById<TextView>(R.id.tvDatoDireccion).text = p.direccion
+        findViewById<TextView>(R.id.tvDatoHorario).text = p.horario
     }
 
+    // ---------- Editar información ----------
 
     private fun mostrarEditar() {
         val actual = PerfilVendedorRepositorio.obtener()
@@ -77,61 +106,70 @@ class PerfilVendedorActivity : AppCompatActivity() {
         val etNegocio = vista.findViewById<EditText>(R.id.etPerfilNegocio)
         val etDireccion = vista.findViewById<EditText>(R.id.etPerfilDireccion)
         val etHorario = vista.findViewById<EditText>(R.id.etPerfilHorario)
+        val btnGuardar = vista.findViewById<TextView>(R.id.btnGuardarEdicion)
 
+        // Se llenan con los datos actuales (el correo solo se muestra)
         etNombre.setText(actual.nombre)
         vista.findViewById<TextView>(R.id.tvPerfilCorreo).text = actual.correo
-        etTelefono.setText(actual.telefono)
+        etTelefono.setText(Telefono.mostrar(actual.telefono))
         etNegocio.setText(actual.negocio)
         etDireccion.setText(actual.direccion)
         etHorario.setText(actual.horario)
+
+        // Los datos del negocio los define el administrador: aquí solo se ven
+        listOf(etNegocio, etDireccion, etHorario).forEach {
+            it.isEnabled = false
+            it.alpha = 0.6f
+        }
 
         vista.findViewById<View>(R.id.btnCancelarEdicion).setOnClickListener {
             dialogo.dismiss()
         }
 
-        vista.findViewById<View>(R.id.btnGuardarEdicion).setOnClickListener {
+        btnGuardar.setOnClickListener {
             val nombre = etNombre.text.toString().trim()
-            val telefono = etTelefono.text.toString().trim()
-            val negocio = etNegocio.text.toString().trim()
+            val telefono = Telefono.normalizar(etTelefono.text.toString())
 
-            if (nombre.isEmpty()) {
+            if (nombre.length < 2) {
                 etNombre.error = "Escribe tu nombre"
                 etNombre.requestFocus()
                 return@setOnClickListener
             }
-            if (telefono.isEmpty()) {
-                etTelefono.error = "Escribe tu teléfono"
+            if (telefono == null) {
+                etTelefono.error = "Escribe un teléfono válido (10 dígitos)"
                 etTelefono.requestFocus()
                 return@setOnClickListener
             }
-            if (negocio.isEmpty()) {
-                etNegocio.error = "Escribe el nombre del negocio"
-                etNegocio.requestFocus()
-                return@setOnClickListener
-            }
 
+            btnGuardar.isEnabled = false
+            btnGuardar.text = "Guardando…"
             PerfilVendedorRepositorio.guardar(
-                actual.copy(
-                    nombre = nombre,
-                    telefono = telefono,
-                    negocio = negocio,
-                    direccion = etDireccion.text.toString().trim(),
-                    horario = etHorario.text.toString().trim()
-                )
-            )
-            mostrarPerfil()
-            dialogo.dismiss()
-            Toast.makeText(this, "Información actualizada", Toast.LENGTH_SHORT).show()
+                actual.copy(nombre = nombre, telefono = telefono)
+            ) { error ->
+                if (isFinishing || isDestroyed) return@guardar
+                if (error != null) {
+                    btnGuardar.isEnabled = true
+                    btnGuardar.text = "Guardar"
+                    Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+                } else {
+                    mostrarPerfil()
+                    dialogo.dismiss()
+                    Toast.makeText(this, "Información actualizada", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         dialogo.setContentView(vista)
+        // Se abre completa y el teclado no tapa los campos
         dialogo.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         dialogo.behavior.skipCollapsed = true
         dialogo.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         dialogo.show()
     }
 
+    // ---------- Navegación ----------
 
+    // Vuelve al panel del vendedor que ya estaba abierto (no abre uno nuevo encima)
     private fun volverAlResumen() {
         val intent = Intent(this, VendedorPrincipalActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -148,8 +186,9 @@ class PerfilVendedorActivity : AppCompatActivity() {
             .show()
     }
 
+    // Cierra la sesión de Firebase y borra el historial: Atrás no regresa al perfil
     private fun cerrarSesion() {
-        AuthRepositorio.cerrarSesion() // cierra la sesión de Firebase
+        AuthRepositorio.cerrarSesion()
         val intent = Intent(this, LoginActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)

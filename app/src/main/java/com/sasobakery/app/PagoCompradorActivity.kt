@@ -144,7 +144,7 @@ class PagoCompradorActivity : AppCompatActivity() {
             }
 
             val intent = android.content.Intent(this, PedidoConfirmadoActivity::class.java)
-            intent.putExtra(PedidoConfirmadoActivity.EXTRA_CODIGO, pedido.codigo)
+            intent.putExtra(PedidoConfirmadoActivity.EXTRA_PEDIDO_ID, pedido.id)
             intent.putExtra(PedidoConfirmadoActivity.EXTRA_DESDE_COMPRA, true)
             startActivity(intent)
         }

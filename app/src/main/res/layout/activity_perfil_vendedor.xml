@@ -329,6 +329,14 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Solo un administrador puede modificar los datos del negocio."
+                android:textColor="#8A8494"
+                android:textSize="11sp" />
+
             <LinearLayout
                 android:id="@+id/btnEditar"
                 android:layout_width="match_parent"

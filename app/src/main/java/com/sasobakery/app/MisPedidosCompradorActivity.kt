@@ -9,13 +9,15 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-
+import android.widget.Toast
+import com.google.firebase.firestore.ListenerRegistration
 
 class MisPedidosCompradorActivity : AppCompatActivity() {
 
     private val adapter = MisPedidosAdapter { pedido -> abrirSeguimiento(pedido) }
 
     private lateinit var tvVacio: View
+    private var registro: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,16 +38,28 @@ class MisPedidosCompradorActivity : AppCompatActivity() {
         rv.adapter = adapter
     }
 
-    override fun onResume() {
-        super.onResume()
-        val lista = PerfilCompradorRepositorio.misPedidos()
-        adapter.submit(lista)
-        tvVacio.visibility = if (lista.isEmpty()) View.VISIBLE else View.GONE
+    // Escucha los pedidos reales del comprador mientras la pantalla se ve: si el vendedor
+    // cambia un estado, aquí se actualiza solo.
+    override fun onStart() {
+        super.onStart()
+        registro = PedidosRepositorio.escucharMios(
+            alCambiar = { lista ->
+                adapter.submit(lista)
+                tvVacio.visibility = if (lista.isEmpty()) View.VISIBLE else View.GONE
+            },
+            alFallar = { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registro?.remove()
+        registro = null
     }
 
     private fun abrirSeguimiento(p: PedidoGestion) {
         val intent = Intent(this, PedidoConfirmadoActivity::class.java)
-        intent.putExtra(PedidoConfirmadoActivity.EXTRA_CODIGO, p.codigo)
+        intent.putExtra(PedidoConfirmadoActivity.EXTRA_PEDIDO_ID, p.id)
         startActivity(intent)
     }
 }

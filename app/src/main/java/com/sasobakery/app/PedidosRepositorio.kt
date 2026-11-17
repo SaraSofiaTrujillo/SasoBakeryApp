@@ -6,6 +6,10 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Transaction
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.ListenerRegistration
+import java.util.Calendar
+import java.util.Locale
 
 /**
  * Pedidos guardados en la colección "pedidos" de Firestore.
@@ -154,6 +158,116 @@ object PedidosRepositorio {
             )
         )
         return Resultado.Listo(numero, lineas)
+    }
+    // ---------- Consultas ----------
+
+    /**
+     * Escucha los pedidos del comprador con la sesión iniciada, del más reciente al más
+     * antiguo. [alCambiar] se llama al empezar y cada vez que un pedido cambia.
+     * Hay que cancelar el ListenerRegistration cuando la pantalla deja de verse.
+     */
+    fun escucharMios(
+        alCambiar: (List<PedidoGestion>) -> Unit,
+        alFallar: (String) -> Unit
+    ): ListenerRegistration {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            alCambiar(emptyList())
+            return ListenerRegistration { }
+        }
+        return db.collection(COLECCION).whereEqualTo("compradorUid", uid)
+            .addSnapshotListener { instantanea, error ->
+                if (error != null || instantanea == null) {
+                    alFallar("No se pudieron cargar tus pedidos.")
+                    return@addSnapshotListener
+                }
+                // Se ordena aquí (por fecha de creación) para no pedir un índice en Firestore
+                val lista = instantanea.documents
+                    .sortedByDescending { creadoEnMilisegundos(it) }
+                    .map { aPedido(it) }
+                alCambiar(lista)
+            }
+    }
+
+    /**
+     * Escucha un pedido concreto: si el vendedor cambia su estado, [alCambiar] avisa.
+     * Recibe null si el pedido no existe.
+     */
+    fun escucharPedido(
+        id: String,
+        alCambiar: (PedidoGestion?) -> Unit,
+        alFallar: (String) -> Unit
+    ): ListenerRegistration =
+        db.collection(COLECCION).document(id).addSnapshotListener { doc, error ->
+            if (error != null || doc == null) {
+                alFallar("No se pudo cargar el pedido.")
+                return@addSnapshotListener
+            }
+            alCambiar(if (doc.exists()) aPedido(doc) else null)
+        }
+
+    // ---------- Conversión de documentos ----------
+
+    // Fecha de creación en milisegundos (si el servidor aún no la confirma, se estima)
+    private fun creadoEnMilisegundos(doc: DocumentSnapshot): Long =
+        doc.getTimestamp("creado", DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
+            ?.toDate()?.time ?: Long.MAX_VALUE
+
+    // Convierte un documento de Firestore en un PedidoGestion
+    private fun aPedido(doc: DocumentSnapshot): PedidoGestion {
+        val creado = creadoEnMilisegundos(doc)
+        val productos = (doc.get("productos") as? List<*>).orEmpty().mapNotNull { item ->
+            val linea = item as? Map<*, *> ?: return@mapNotNull null
+            ProductoPedido(
+                nombre = linea["nombre"] as? String ?: "",
+                cantidad = (linea["cantidad"] as? Number)?.toInt() ?: 0,
+                precioUnitario = (linea["precioUnitario"] as? Number)?.toInt() ?: 0
+            )
+        }
+        return PedidoGestion(
+            codigo = doc.getString("codigo").orEmpty(),
+            cliente = doc.getString("cliente").orEmpty(),
+            fecha = if (creado == Long.MAX_VALUE) doc.getString("fechaTexto").orEmpty()
+            else textoFecha(creado),
+            horario = doc.getString("horario").orEmpty(),
+            tipo = TipoEntrega.values().firstOrNull { it.name == doc.getString("tipo") }
+                ?: TipoEntrega.RECOJO,
+            productos = productos,
+            estado = EstadoPedido.values().firstOrNull { it.name == doc.getString("estado") }
+                ?: EstadoPedido.PENDIENTE,
+            cancelado = doc.getBoolean("cancelado") == true,
+            fechaEntrega = doc.getString("fechaEntrega").orEmpty(),
+            direccion = doc.getString("direccion").orEmpty(),
+            envio = (doc.getLong("envio") ?: 0L).toInt(),
+            metodoPago = doc.getString("metodoPago").orEmpty(),
+            id = doc.id,
+            compradorUid = doc.getString("compradorUid").orEmpty(),
+            tiendaNombre = doc.getString("tiendaNombre").orEmpty(),
+            tiendaTelefono = doc.getString("tiendaTelefono").orEmpty(),
+            tiendaDireccion = doc.getString("tiendaDireccion").orEmpty()
+        )
+    }
+
+    private val meses = listOf(
+        "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"
+    )
+
+    // 1763314800000 -> "Hoy, 5:44", "Ayer, 3:10" o "16 nov, 9:02"
+    private fun textoFecha(milisegundos: Long): String {
+        val fecha = Calendar.getInstance().apply { timeInMillis = milisegundos }
+        val hoy = Calendar.getInstance()
+        val ayer = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }
+        val hora = String.format(
+            Locale.US, "%d:%02d", fecha.get(Calendar.HOUR_OF_DAY), fecha.get(Calendar.MINUTE)
+        )
+        fun mismoDia(a: Calendar, b: Calendar) =
+            a.get(Calendar.YEAR) == b.get(Calendar.YEAR) &&
+                    a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR)
+        return when {
+            mismoDia(fecha, hoy) -> "Hoy, $hora"
+            mismoDia(fecha, ayer) -> "Ayer, $hora"
+            else -> "${fecha.get(Calendar.DAY_OF_MONTH)} ${meses[fecha.get(Calendar.MONTH)]}, $hora"
+        }
     }
 
     private fun mensajeDeError(error: Exception): String =

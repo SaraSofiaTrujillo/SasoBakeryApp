@@ -20,6 +20,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.firebase.firestore.ListenerRegistration
 
 class PerfilCompradorActivity : AppCompatActivity() {
 
@@ -32,6 +33,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
     private lateinit var tvBadgePedidos: TextView
     private lateinit var tvSubDirecciones: TextView
     private lateinit var tvSubHuella: TextView
+    private var registroPedidos: ListenerRegistration? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -64,6 +66,24 @@ class PerfilCompradorActivity : AppCompatActivity() {
         PerfilCompradorRepositorio.cargarDeSesion {
             if (!isFinishing && !isDestroyed) mostrarPerfil()
         }
+    }
+
+    // Escucha los pedidos reales mientras el perfil se ve, para sus cifras
+    override fun onStart() {
+        super.onStart()
+        registroPedidos = PedidosRepositorio.escucharMios(
+            alCambiar = { lista ->
+                PerfilCompradorRepositorio.actualizarPedidos(lista)
+                mostrarPerfil()
+            },
+            alFallar = { mensaje(it) }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registroPedidos?.remove()
+        registroPedidos = null
     }
 
     private fun crearFilas() {

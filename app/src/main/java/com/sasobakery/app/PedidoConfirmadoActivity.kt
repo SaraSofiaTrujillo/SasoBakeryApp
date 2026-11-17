@@ -17,15 +17,20 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.firebase.firestore.ListenerRegistration
 
 class PedidoConfirmadoActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_CODIGO = "codigo_pedido"
+        const val EXTRA_PEDIDO_ID = "pedido_id" // id del pedido en Firestore
         const val EXTRA_DESDE_COMPRA = "desde_compra"
     }
 
     private var codigo = ""
+    private var pedidoId = ""
+    private var pedido: PedidoGestion? = null // el pedido tal como está en Firestore
+    private var registro: ListenerRegistration? = null
     private var desdeCompra = false
 
     private lateinit var tvTitulo: TextView
@@ -41,10 +46,11 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        codigo = intent.getStringExtra(EXTRA_CODIGO) ?: ""
+        pedidoId = intent.getStringExtra(EXTRA_PEDIDO_ID).orEmpty()
         desdeCompra = intent.getBooleanExtra(EXTRA_DESDE_COMPRA, false)
 
-        if (PedidosVendedorRepositorio.buscarPorCodigo(codigo) == null) {
+        // Sin un pedido que mostrar, se cierra la pantalla
+        if (pedidoId.isEmpty()) {
             Toast.makeText(this, "No se encontró el pedido", Toast.LENGTH_SHORT).show()
             finish()
             return
@@ -82,33 +88,38 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
         })
 
         findViewById<View>(R.id.btnAyuda).setOnClickListener { mostrarAyuda() }
-
-        findViewById<View>(R.id.cardEstado).setOnLongClickListener {
-            val antes = PedidosVendedorRepositorio.buscarPorCodigo(codigo)?.estado
-            PedidosVendedorRepositorio.avanzarEstado(codigo)
-            val despues = PedidosVendedorRepositorio.buscarPorCodigo(codigo)?.estado
-            mensaje(
-                if (antes == despues) "El pedido ya está en su último estado"
-                else "Estado actualizado (prueba)"
-            )
-            mostrar()
-            true
-        }
-
-        mostrar()
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (::layoutPasos.isInitialized) mostrar()
+    // Mientras se ve el seguimiento, escucha el pedido en Firestore: si el vendedor cambia
+    // su estado, la pantalla se actualiza sola.
+    override fun onStart() {
+        super.onStart()
+        if (pedidoId.isEmpty()) return
+        registro = PedidosRepositorio.escucharPedido(
+            pedidoId,
+            alCambiar = { p ->
+                if (p == null) {
+                    mensaje("No se encontró el pedido")
+                    finish()
+                } else {
+                    pedido = p
+                    codigo = p.codigo
+                    mostrar()
+                }
+            },
+            alFallar = { mensaje(it) }
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registro?.remove()
+        registro = null
     }
 
 
     private fun mostrar() {
-        val p = PedidosVendedorRepositorio.buscarPorCodigo(codigo) ?: run {
-            finish()
-            return
-        }
+        val p = pedido ?: return
         val domicilio = p.tipo == TipoEntrega.ENTREGA
 
         tvTitulo.text = "Pedido ${p.codigo}"
@@ -236,7 +247,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
 
 
     private fun mostrarAyuda() {
-        val pedido = PedidosVendedorRepositorio.buscarPorCodigo(codigo)
+        val pedido = pedido
         val negocio = pedido?.negocioMostrado ?: PerfilVendedorRepositorio.tienda().negocio
         val telefono = pedido?.telefonoMostrado ?: PerfilVendedorRepositorio.tienda().telefono
         MaterialAlertDialogBuilder(this)
