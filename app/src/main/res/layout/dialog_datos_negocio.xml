@@ -60,8 +60,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
-            android:text="Teléfono de contacto"
-            android:textColor="#2E2340"
+            android:text="Teléfono de contacto del negocio (lo ven los compradores)"            android:textColor="#2E2340"
             android:textSize="11sp" />
 
         <EditText

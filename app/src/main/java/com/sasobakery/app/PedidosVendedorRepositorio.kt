@@ -31,7 +31,8 @@ data class PedidoGestion(
     val compradorUid: String = "",    // cuenta del comprador que hizo el pedido
     val tiendaNombre: String = "",    // datos de contacto del negocio al momento de la compra
     val tiendaTelefono: String = "",
-    val tiendaDireccion: String = "") {
+    val tiendaDireccion: String = "",
+    val clienteTelefono: String = "") { //telefono del comprador para que la tienda lo contacte
     val total: Int get() = productos.sumOf { it.subtotal }
 
     // Datos del negocio guardados con el pedido. Los pedidos de ejemplo no los tienen

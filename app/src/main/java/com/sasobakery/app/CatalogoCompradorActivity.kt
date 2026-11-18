@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.ListenerRegistration
 
+
 class CatalogoCompradorActivity : AppCompatActivity() {
 
     // Dato de ejemplo (cuando exista el inicio de sesión vendrá del comprador real)
@@ -28,6 +29,7 @@ class CatalogoCompradorActivity : AppCompatActivity() {
     private var categoriaActual: String? = null // null = Todo
     private var mostrarTodo = false // true = "Ver todas" (todo el catálogo)
     private var registro: ListenerRegistration? = null
+    private var registroNegocio: ListenerRegistration? = null
 
     private lateinit var scroll: ScrollView
     private lateinit var scrollChips: View
@@ -134,12 +136,18 @@ class CatalogoCompradorActivity : AppCompatActivity() {
             },
             alFallar = { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
         )
+        registroNegocio = NegocioRepositorio.escuchar(
+            alCambiar = { },
+            alFallar = { }
+        )
     }
 
     override fun onStop() {
         super.onStop()
         registro?.remove()
         registro = null
+        registroNegocio?.remove()
+        registroNegocio = null
     }
 
     private fun refrescar() {

@@ -155,7 +155,7 @@ object PedidosRepositorio {
                 "tiendaDireccion" to base.tiendaDireccion,
                 "fechaTexto" to base.fecha,
                 "creado" to FieldValue.serverTimestamp()
-            )
+            ) + datosDeContacto(base)
         )
         return Resultado.Listo(numero, lineas)
     }
@@ -227,6 +227,7 @@ object PedidosRepositorio {
         return PedidoGestion(
             codigo = doc.getString("codigo").orEmpty(),
             cliente = doc.getString("cliente").orEmpty(),
+            clienteTelefono = doc.getString("clienteTelefono").orEmpty(),
             fecha = if (creado == Long.MAX_VALUE) doc.getString("fechaTexto").orEmpty()
             else textoFecha(creado),
             horario = doc.getString("horario").orEmpty(),
@@ -269,6 +270,10 @@ object PedidosRepositorio {
             else -> "${fecha.get(Calendar.DAY_OF_MONTH)} ${meses[fecha.get(Calendar.MONTH)]}, $hora"
         }
     }
+    // El teléfono del comprador solo se guarda si lo tiene
+    private fun datosDeContacto(base: PedidoGestion): Map<String, Any> =
+        if (base.clienteTelefono.isBlank()) emptyMap()
+        else mapOf("clienteTelefono" to base.clienteTelefono)
 
     private fun mensajeDeError(error: Exception): String =
         if (error is FirebaseFirestoreException &&

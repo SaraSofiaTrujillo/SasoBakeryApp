@@ -6,7 +6,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 // Datos del comprador
 data class PerfilComprador(
     val nombre: String,
-    val correo: String
+    val correo: String,
+    val telefono: String = ""
 ) {
     // "Valentina Mendoza" -> "VM" (para el avatar)
     val iniciales: String
@@ -18,9 +19,10 @@ data class PerfilComprador(
 }
 
 /**
- * Perfil del comprador que tiene la sesión iniciada. El nombre se lee de Firestore
- * (colección "usuarios") y el correo viene de Firebase Authentication.
- * Los pedidos y los puntos siguen en memoria hasta que los conectemos (Día 4).
+ * Perfil del comprador que tiene la sesión iniciada. El nombre y el teléfono se leen de
+ * Firestore (colección "usuarios") y el correo viene de Firebase Authentication.
+ * Los pedidos que se muestran en el perfil llegan de Firestore (los entrega
+ * PerfilCompradorActivity al escucharlos).
  */
 object PerfilCompradorRepositorio {
 
@@ -30,8 +32,8 @@ object PerfilCompradorRepositorio {
 
     private var perfil = PerfilComprador(nombre = "", correo = "")
     private var uidCargado: String? = null // de qué cuenta es el perfil guardado en memoria
-    // Pedidos reales del comprador en sesión (los llena PerfilCompradorActivity al escucharlos)
 
+    // Pedidos reales del comprador en sesión
     private var pedidos: List<PedidoGestion> = emptyList()
 
     // Preferencia guardada (todavía no se envían avisos reales)
@@ -52,8 +54,8 @@ object PerfilCompradorRepositorio {
     }
 
     /**
-     * Lee el nombre real desde Firestore y avisa cuando termina. Si el perfil de esta
-     * cuenta ya estaba cargado, avisa de inmediato sin volver a consultar.
+     * Lee nombre y teléfono reales desde Firestore y avisa cuando termina. Si el perfil
+     * de esta cuenta ya estaba cargado, avisa de inmediato sin volver a consultar.
      */
     fun cargarDeSesion(alTerminar: () -> Unit) {
         val usuario = FirebaseAuth.getInstance().currentUser ?: return
@@ -67,19 +69,34 @@ object PerfilCompradorRepositorio {
                 perfil = PerfilComprador(
                     nombre = doc.getString("nombre").orEmpty()
                         .ifBlank { correo.substringBefore("@") },
-                    correo = correo
+                    correo = correo,
+                    telefono = doc.getString("telefono").orEmpty()
                 )
                 uidCargado = usuario.uid
                 alTerminar()
             }
     }
 
-    /** Guarda el perfil en memoria y el nombre nuevo en Firestore. */
-    fun guardar(nuevo: PerfilComprador) {
-        perfil = nuevo
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    /**
+     * Guarda nombre y teléfono en Firestore. [alTerminar] recibe null si salió bien,
+     * o el mensaje de error.
+     */
+    fun guardar(nuevo: PerfilComprador, alTerminar: (String?) -> Unit = {}) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            alTerminar("No hay sesión iniciada")
+            return
+        }
         FirebaseFirestore.getInstance().collection("usuarios").document(uid)
-            .update("nombre", nuevo.nombre)
+            .update(mapOf("nombre" to nuevo.nombre, "telefono" to nuevo.telefono))
+            .addOnSuccessListener {
+                perfil = nuevo
+                uidCargado = uid
+                alTerminar(null)
+            }
+            .addOnFailureListener {
+                alTerminar("No se pudo guardar. Revisa tu conexión e intenta de nuevo.")
+            }
     }
 
     /** Recibe los pedidos reales que llegan de Firestore. */

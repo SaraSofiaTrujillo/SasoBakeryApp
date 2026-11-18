@@ -79,7 +79,7 @@ object AuthRepositorio {
         correo: String,
         clave: String,
         rol: Rol,
-        datosNegocio: Map<String, String> = emptyMap(), // solo los vendedores: teléfono, dirección, horario
+        telefono: String, // teléfono personal ya normalizado (solo dígitos y + opcional)
         alTerminar: (ResultadoAuth) -> Unit
     ) {
         // Seguridad: el registro público nunca crea administradores
@@ -103,7 +103,7 @@ object AuthRepositorio {
                     "activo" to true,
                     "creado" to FieldValue.serverTimestamp()
                 )
-                perfil.putAll(datosNegocio) // los datos del negocio viajan en el mismo documento
+                perfil["telefono"] = telefono // el teléfono personal viaja en el mismo documento
                 db.collection(COLECCION_USUARIOS).document(usuario.uid).set(perfil)
                     .addOnSuccessListener {
                         rolActual = rol

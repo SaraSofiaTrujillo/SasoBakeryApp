@@ -276,103 +276,41 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <LinearLayout
-                    android:id="@+id/bloqueNegocio"
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone">
+                    android:layout_marginTop="20dp"
+                    android:text="Teléfono"
+                    android:textColor="#2E2340"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        android:text="Datos de tu negocio (Saso Bakery)"
-                        android:textColor="#5D477F"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
+                <EditText
+                    android:id="@+id/etTelefono"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_users_stats"
+                    android:hint="Ej. 300 123 4567"
+                    android:imeOptions="actionDone"
+                    android:importantForAutofill="no"
+                    android:inputType="phone"
+                    android:maxLength="20"
+                    android:maxLines="1"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:textColor="#2E2340"
+                    android:textColorHint="#8A8494"
+                    android:textSize="13sp" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="Teléfono"
-                        android:textColor="#2E2340"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Te llamaremos solo para temas de tus pedidos."
+                    android:textColor="#8A8494"
+                    android:textSize="10sp" />
 
-                    <EditText
-                        android:id="@+id/etTelefono"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@drawable/bg_users_stats"
-                        android:hint="Ej. 300 123 4567"
-                        android:imeOptions="actionNext"
-                        android:importantForAutofill="no"
-                        android:inputType="phone"
-                        android:maxLength="20"
-                        android:maxLines="1"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"
-                        android:textColor="#2E2340"
-                        android:textColorHint="#8A8494"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Dirección"
-                        android:textColor="#2E2340"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-
-                    <EditText
-                        android:id="@+id/etDireccion"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@drawable/bg_users_stats"
-                        android:hint="Ej. Cra 7 # 45-20, Bogotá"
-                        android:imeOptions="actionNext"
-                        android:importantForAutofill="no"
-                        android:inputType="textPostalAddress|textCapSentences"
-                        android:maxLength="100"
-                        android:maxLines="1"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"
-                        android:textColor="#2E2340"
-                        android:textColorHint="#8A8494"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Horario de atención"
-                        android:textColor="#2E2340"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-
-                    <EditText
-                        android:id="@+id/etHorario"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@drawable/bg_users_stats"
-                        android:hint="Ej. Lun - Sáb · 8:00 a. m. - 6:00 p. m."
-                        android:imeOptions="actionDone"
-                        android:importantForAutofill="no"
-                        android:inputType="text|textCapSentences"
-                        android:maxLength="60"
-                        android:maxLines="1"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp"
-                        android:textColor="#2E2340"
-                        android:textColorHint="#8A8494"
-                        android:textSize="13sp" />
-                </LinearLayout>
                 <!-- Botón principal -->
                 <TextView
                     android:id="@+id/btnCrearCuenta"

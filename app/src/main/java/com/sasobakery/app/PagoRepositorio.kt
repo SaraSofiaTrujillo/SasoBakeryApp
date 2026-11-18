@@ -105,6 +105,13 @@ object PagoRepositorio {
             return
         }
 
+        // Sin teléfono la tienda no podría contactar al comprador por su pedido
+        if (PerfilCompradorRepositorio.obtener().telefono.isBlank()) {
+            mensajeError = "Agrega tu teléfono en Perfil → Editar para que la tienda pueda contactarte"
+            alTerminar(null)
+            return
+        }
+
         val domicilio = EntregaRepositorio.tipo == TipoEntrega.ENTREGA
         val metodo = metodoElegido()
         val tienda = PerfilVendedorRepositorio.tienda()
@@ -117,6 +124,7 @@ object PagoRepositorio {
         val base = PedidoGestion(
             codigo = "",
             cliente = PerfilCompradorRepositorio.obtener().nombre,
+            clienteTelefono = PerfilCompradorRepositorio.obtener().telefono,
             fecha = "Hoy, $hora",
             horario = EntregaRepositorio.horario,
             tipo = EntregaRepositorio.tipo,

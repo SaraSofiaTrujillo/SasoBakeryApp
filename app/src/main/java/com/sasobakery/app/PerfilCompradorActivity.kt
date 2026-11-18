@@ -189,21 +189,37 @@ class PerfilCompradorActivity : AppCompatActivity() {
 
         val etNombre = vista.findViewById<EditText>(R.id.etCompradorNombre)
         etNombre.setText(actual.nombre)
+        val etTelefono = vista.findViewById<EditText>(R.id.etCompradorTelefono)
+        etTelefono.setText(Telefono.mostrar(actual.telefono))
         vista.findViewById<TextView>(R.id.tvCompradorCorreo).text = actual.correo
 
         vista.findViewById<View>(R.id.btnCancelarPerfil).setOnClickListener { dialogo.dismiss() }
 
         vista.findViewById<View>(R.id.btnGuardarPerfil).setOnClickListener {
             val nombre = etNombre.text.toString().trim()
+            val telefono = Telefono.normalizar(etTelefono.text.toString())
             if (nombre.isEmpty()) {
                 etNombre.error = "Escribe tu nombre"
                 etNombre.requestFocus()
                 return@setOnClickListener
             }
-            PerfilCompradorRepositorio.guardar(actual.copy(nombre = nombre))
-            mostrarPerfil()
-            dialogo.dismiss()
-            mensaje("Perfil actualizado")
+            if (telefono == null) {
+                etTelefono.error = "Escribe un teléfono válido (10 dígitos)"
+                etTelefono.requestFocus()
+                return@setOnClickListener
+            }
+            PerfilCompradorRepositorio.guardar(
+                actual.copy(nombre = nombre, telefono = telefono)
+            ) { error ->
+                if (isFinishing || isDestroyed) return@guardar
+                if (error != null) {
+                    mensaje(error)
+                } else {
+                    mostrarPerfil()
+                    dialogo.dismiss()
+                    mensaje("Perfil actualizado")
+                }
+            }
         }
 
         abrirHoja(dialogo, vista)
