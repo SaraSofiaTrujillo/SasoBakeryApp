@@ -10,6 +10,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.ListenerRegistration
 import java.util.Calendar
 import java.util.Locale
+import com.google.firebase.firestore.GeoPoint
 
 /**
  * Pedidos guardados en la colección "pedidos" de Firestore.
@@ -228,6 +229,8 @@ object PedidosRepositorio {
             codigo = doc.getString("codigo").orEmpty(),
             cliente = doc.getString("cliente").orEmpty(),
             clienteTelefono = doc.getString("clienteTelefono").orEmpty(),
+            latitud = doc.getGeoPoint("ubicacion")?.latitude,
+            longitud = doc.getGeoPoint("ubicacion")?.longitude,
             fecha = if (creado == Long.MAX_VALUE) doc.getString("fechaTexto").orEmpty()
             else textoFecha(creado),
             horario = doc.getString("horario").orEmpty(),
@@ -270,10 +273,102 @@ object PedidosRepositorio {
             else -> "${fecha.get(Calendar.DAY_OF_MONTH)} ${meses[fecha.get(Calendar.MONTH)]}, $hora"
         }
     }
-    // El teléfono del comprador solo se guarda si lo tiene
-    private fun datosDeContacto(base: PedidoGestion): Map<String, Any> =
-        if (base.clienteTelefono.isBlank()) emptyMap()
-        else mapOf("clienteTelefono" to base.clienteTelefono)
+    // Datos opcionales del pedido: el teléfono del comprador y la ubicación de entrega.
+    // Solo se guardan los que existen.
+    private fun datosDeContacto(base: PedidoGestion): Map<String, Any> {
+        val datos = mutableMapOf<String, Any>()
+        if (base.clienteTelefono.isNotBlank()) datos["clienteTelefono"] = base.clienteTelefono
+        val latitud = base.latitud
+        val longitud = base.longitud
+        if (latitud != null && longitud != null) datos["ubicacion"] = GeoPoint(latitud, longitud)
+        return datos
+    }
+    // ---------- Gestión del equipo (vendedores y administradores) ----------
+
+    /**
+     * Escucha TODOS los pedidos de la tienda, del más reciente al más antiguo.
+     * Solo funciona con la sesión de un vendedor o administrador activo.
+     */
+    fun escucharTodos(
+        alCambiar: (List<PedidoGestion>) -> Unit,
+        alFallar: (String) -> Unit
+    ): ListenerRegistration =
+        db.collection(COLECCION).addSnapshotListener { instantanea, error ->
+            if (error != null || instantanea == null) {
+                alFallar("No se pudieron cargar los pedidos.")
+                return@addSnapshotListener
+            }
+            alCambiar(
+                instantanea.documents
+                    .sortedByDescending { creadoEnMilisegundos(it) }
+                    .map { aPedido(it) }
+            )
+        }
+
+    /**
+     * Pasa el pedido al siguiente estado (Nuevo → Preparando → Listo → Entregado).
+     * Antes de guardar vuelve a leer el pedido: si otra persona del equipo ya lo cambió,
+     * no avanza dos veces. [alTerminar] recibe null si salió bien, o el motivo del error.
+     */
+    fun avanzar(pedido: PedidoGestion, alTerminar: (String?) -> Unit) {
+        if (pedido.id.isEmpty()) {
+            alTerminar("Este pedido no se puede modificar")
+            return
+        }
+        val ref = db.collection(COLECCION).document(pedido.id)
+        db.runTransaction<String?> { tx ->
+            val doc = tx.get(ref)
+            if (!doc.exists()) return@runTransaction "El pedido ya no existe"
+            if (doc.getBoolean("cancelado") == true) return@runTransaction "El pedido fue cancelado"
+            if (doc.getString("estado") != pedido.estado.name) {
+                return@runTransaction "El pedido ya cambió de estado. Revisa la lista."
+            }
+            val siguiente = pedido.siguienteEstado ?: return@runTransaction "El pedido ya terminó"
+            tx.update(ref, "estado", siguiente.name)
+            null
+        }
+            .addOnSuccessListener { alTerminar(it) }
+            .addOnFailureListener { alTerminar(mensajeDeError(it)) }
+    }
+
+    /**
+     * Cancela el pedido y devuelve sus productos al inventario (suma el stock que se
+     * descontó al comprar), todo en una sola operación. No se puede cancelar un pedido
+     * entregado ni uno ya cancelado.
+     */
+    fun cancelar(pedido: PedidoGestion, alTerminar: (String?) -> Unit) {
+        if (pedido.id.isEmpty()) {
+            alTerminar("Este pedido no se puede modificar")
+            return
+        }
+        val ref = db.collection(COLECCION).document(pedido.id)
+        db.runTransaction<String?> { tx ->
+            // ---- Lecturas primero ----
+            val doc = tx.get(ref)
+            if (!doc.exists()) return@runTransaction "El pedido ya no existe"
+            if (doc.getBoolean("cancelado") == true) return@runTransaction "El pedido ya estaba cancelado"
+            if (doc.getString("estado") == EstadoPedido.ENTREGADO.name) {
+                return@runTransaction "Un pedido entregado no se puede cancelar"
+            }
+            val devoluciones = (doc.get("productos") as? List<*>).orEmpty().mapNotNull { item ->
+                val linea = item as? Map<*, *> ?: return@mapNotNull null
+                val id = linea["productoId"] as? String ?: return@mapNotNull null
+                val cantidad = (linea["cantidad"] as? Number)?.toInt() ?: return@mapNotNull null
+                val refProducto = db.collection("productos").document(id)
+                Triple(refProducto, tx.get(refProducto), cantidad)
+            }
+            // ---- Escrituras ----
+            devoluciones.forEach { (refProducto, producto, cantidad) ->
+                if (producto.exists()) {
+                    tx.update(refProducto, "stock", (producto.getLong("stock") ?: 0L) + cantidad)
+                }
+            }
+            tx.update(ref, "cancelado", true)
+            null
+        }
+            .addOnSuccessListener { alTerminar(it) }
+            .addOnFailureListener { alTerminar(mensajeDeError(it)) }
+    }
 
     private fun mensajeDeError(error: Exception): String =
         if (error is FirebaseFirestoreException &&

@@ -125,6 +125,9 @@ object PagoRepositorio {
             codigo = "",
             cliente = PerfilCompradorRepositorio.obtener().nombre,
             clienteTelefono = PerfilCompradorRepositorio.obtener().telefono,
+            // Las coordenadas solo viajan si la entrega es a domicilio
+            latitud = if (domicilio) EntregaRepositorio.latitud else null,
+            longitud = if (domicilio) EntregaRepositorio.longitud else null,
             fecha = "Hoy, $hora",
             horario = EntregaRepositorio.horario,
             tipo = EntregaRepositorio.tipo,
@@ -145,8 +148,7 @@ object PagoRepositorio {
                 alTerminar(null)
                 return@crear
             }
-            // Transitorio: las pantallas de pedidos todavía leen la lista en memoria
-            PedidosVendedorRepositorio.agregar(pedido)
+
             CarritoRepositorio.vaciar()
             alTerminar(pedido)
         }

@@ -24,6 +24,29 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/btnUsarUbicacion"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_users_input"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="Usar mi ubicación actual"
+            android:textColor="#5D477F"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvEstadoUbicacion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="#3F7D5A"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"

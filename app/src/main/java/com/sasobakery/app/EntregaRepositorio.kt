@@ -16,6 +16,9 @@ object EntregaRepositorio {
     var direccion = ""
     var indiceFecha = 0
     var horario = HORARIOS[1]
+    // Ubicación GPS capturada para la entrega a domicilio (null = no se ha capturado)
+    var latitud: Double? = null
+    var longitud: Double? = null
 
     private val DIAS = listOf("Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado")
     private val MESES = listOf(
@@ -24,6 +27,10 @@ object EntregaRepositorio {
     )
 
     fun tieneDireccion(): Boolean = direccion.isNotBlank()
+
+
+    /** ¿El comprador capturó su ubicación con el GPS? */
+    fun tieneUbicacion(): Boolean = latitud != null && longitud != null
 
     fun costoEnvio(): Int = if (tipo == TipoEntrega.ENTREGA) COSTO_DOMICILIO else 0
 
