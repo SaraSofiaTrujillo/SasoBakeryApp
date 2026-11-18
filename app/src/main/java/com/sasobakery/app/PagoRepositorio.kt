@@ -2,8 +2,11 @@ package com.sasobakery.app
 
 import java.util.Calendar
 
-enum class TipoPago { TARJETA, BILLETERA, CONTRA_ENTREGA }
+// Los dos tipos de pago de la tienda: en línea (pasarela PayU) o al recibir/recoger
+enum class TipoPago { ONLINE, CONTRA_ENTREGA }
 
+// Una opción de pago tal como se ve en la lista.
+// "badge" es el texto corto del cuadrito (PayU, $)
 data class MetodoPago(
     val id: String,
     val tipo: TipoPago,
@@ -12,91 +15,73 @@ data class MetodoPago(
     val detalle: String
 )
 
-private data class TarjetaGuardada(
-    val id: String,
-    val marca: String,
-    val ultimos4: String,
-    val vence: String
-)
-
+// Lo que el comprador elige en la pantalla de Método de pago (solo en memoria).
+// La app nunca guarda datos de tarjeta: el pago en línea se hace en la página de PayU.
 object PagoRepositorio {
 
-    const val ID_BILLETERA = "billetera"
+    const val ID_ONLINE = "online"
     const val ID_CONTRA_ENTREGA = "contra_entrega"
 
-    private val tarjetas = mutableListOf<TarjetaGuardada>()
-    private var contador = 0
-
+    // null = el comprador todavía no ha tocado ninguna opción
     var idSeleccionado: String? = null
 
+    /** Las opciones de pago. El texto de contra entrega cambia si el comprador recoge en tienda. */
     fun metodos(): List<MetodoPago> {
-        val lista = mutableListOf<MetodoPago>()
-
-        tarjetas.forEach { t ->
-            lista.add(
-                MetodoPago(t.id, TipoPago.TARJETA, t.marca, "•••• ${t.ultimos4}", "Vence ${t.vence}")
-            )
-        }
-
-        lista.add(
-            MetodoPago(
-                ID_BILLETERA, TipoPago.BILLETERA, "N·D",
-                "Nequi o Daviplata", "Confirma desde tu celular"
-            )
-        )
-
         val alRecibir = EntregaRepositorio.tipo == TipoEntrega.ENTREGA
-        lista.add(
+        return listOf(
+            MetodoPago(
+                ID_ONLINE, TipoPago.ONLINE, "PayU",
+                "Pagar en línea", "Tarjeta, PSE u otros medios con PayU"
+            ),
             MetodoPago(
                 ID_CONTRA_ENTREGA, TipoPago.CONTRA_ENTREGA, "$",
                 if (alRecibir) "Pago contra entrega" else "Pago al recoger",
                 if (alRecibir) "Pagas cuando recibas tu pedido" else "Pagas cuando recojas tu pedido"
             )
         )
-        return lista
     }
 
+    /** El método elegido; si todavía no eligió ninguno, el primero de la lista. */
     fun metodoElegido(): MetodoPago {
         val todos = metodos()
         return todos.firstOrNull { it.id == idSeleccionado } ?: todos.first()
     }
 
-    fun agregarTarjeta(digitos: String, vence: String) {
-        contador++
-        val marca = when (digitos.firstOrNull()) {
-            '4' -> "VISA"
-            '5' -> "MC"
-            else -> "TDC"
-        }
-        val tarjeta = TarjetaGuardada("tarjeta_$contador", marca, digitos.takeLast(4), vence)
-        tarjetas.add(tarjeta)
-        idSeleccionado = tarjeta.id
-    }
-
-    fun vencimientoValido(texto: String): Boolean {
-        val partes = texto.split("/")
-        if (partes.size != 2) return false
-        if (partes[0].length != 2 || partes[1].length != 2) return false
-        val mes = partes[0].toIntOrNull() ?: return false
-        val anio = partes[1].toIntOrNull() ?: return false
-        if (mes !in 1..12) return false
-
-        val hoy = Calendar.getInstance()
-        val anioActual = hoy.get(Calendar.YEAR) % 100
-        val mesActual = hoy.get(Calendar.MONTH) + 1
-        return anio > anioActual || (anio == anioActual && mes >= mesActual)
-    }
-
+    // Si confirmarPedido() devuelve null, aquí queda el motivo para mostrárselo al comprador
     var mensajeError: String? = null
         private set
+
+    /**
+     * Revisa lo que se puede comprobar ANTES de abrir PayU, para no cobrar un pedido que
+     * luego no se pueda crear. Devuelve el motivo del problema, o null si todo está bien.
+     */
+    fun validarAntesDePagar(): String? {
+        val items = CarritoRepositorio.obtenerItems()
+        if (items.isEmpty()) return "Tu carrito está vacío"
+        if (PerfilCompradorRepositorio.obtener().telefono.isBlank()) {
+            return "Agrega tu teléfono en Perfil → Editar para que la tienda pueda contactarte"
+        }
+        val sinStock = items.firstOrNull { it.cantidad > it.producto.stock }
+        if (sinStock != null) {
+            return "Ya no hay suficiente stock de ${sinStock.producto.nombre}. Revisa tu carrito."
+        }
+        return null
+    }
 
     /**
      * Convierte el carrito en un pedido guardado en Firestore: crea el pedido, descuenta
      * el stock y vacía el carrito. [alTerminar] recibe el pedido, o null si no se pudo
      * (el motivo queda en [mensajeError]).
      */
-    fun confirmarPedido(alTerminar: (PedidoGestion?) -> Unit) {
+    fun confirmarPedido(pago: RespuestaPayu? = null, alTerminar: (PedidoGestion?) -> Unit) {
         mensajeError = null
+
+        // Con pago en línea solo se crea el pedido si PayU lo aprobó y se pudo verificar
+        if (pago != null && !(pago.aprobada && pago.verificada)) {
+            mensajeError = "El pago no está aprobado"
+            alTerminar(null)
+            return
+        }
 
         val items = CarritoRepositorio.obtenerItems()
         if (items.isEmpty()) {
@@ -136,7 +121,11 @@ object PagoRepositorio {
             fechaEntrega = EntregaRepositorio.fechaElegida().texto,
             direccion = if (domicilio) EntregaRepositorio.direccion else "",
             envio = EntregaRepositorio.costoEnvio(),
-            metodoPago = if (metodo.tipo == TipoPago.TARJETA) "Tarjeta ${metodo.titulo}" else metodo.titulo,
+            metodoPago = if (pago != null) "Pago en línea (PayU)" else metodo.titulo,
+            pagoProveedor = if (pago != null) "PayU" else "",
+            pagoEstado = if (pago != null) "APROBADO" else "CONTRA_ENTREGA",
+            pagoReferencia = pago?.referencia.orEmpty(),
+            pagoTransaccion = pago?.transaccion.orEmpty(),
             tiendaNombre = tienda.negocio,
             tiendaTelefono = tienda.telefono,
             tiendaDireccion = tienda.direccion

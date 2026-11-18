@@ -231,6 +231,10 @@ object PedidosRepositorio {
             clienteTelefono = doc.getString("clienteTelefono").orEmpty(),
             latitud = doc.getGeoPoint("ubicacion")?.latitude,
             longitud = doc.getGeoPoint("ubicacion")?.longitude,
+            pagoEstado = doc.getString("pagoEstado").orEmpty(),
+            pagoProveedor = doc.getString("pagoProveedor").orEmpty(),
+            pagoReferencia = doc.getString("pagoReferencia").orEmpty(),
+            pagoTransaccion = doc.getString("pagoTransaccion").orEmpty(),
             fecha = if (creado == Long.MAX_VALUE) doc.getString("fechaTexto").orEmpty()
             else textoFecha(creado),
             horario = doc.getString("horario").orEmpty(),
@@ -273,16 +277,22 @@ object PedidosRepositorio {
             else -> "${fecha.get(Calendar.DAY_OF_MONTH)} ${meses[fecha.get(Calendar.MONTH)]}, $hora"
         }
     }
-    // Datos opcionales del pedido: el teléfono del comprador y la ubicación de entrega.
-    // Solo se guardan los que existen.
+
+    // Datos opcionales del pedido: teléfono del comprador, ubicación de entrega y datos
+    // del pago. Solo se guardan los que existen.
     private fun datosDeContacto(base: PedidoGestion): Map<String, Any> {
         val datos = mutableMapOf<String, Any>()
         if (base.clienteTelefono.isNotBlank()) datos["clienteTelefono"] = base.clienteTelefono
         val latitud = base.latitud
         val longitud = base.longitud
         if (latitud != null && longitud != null) datos["ubicacion"] = GeoPoint(latitud, longitud)
+        if (base.pagoEstado.isNotBlank()) datos["pagoEstado"] = base.pagoEstado
+        if (base.pagoProveedor.isNotBlank()) datos["pagoProveedor"] = base.pagoProveedor
+        if (base.pagoReferencia.isNotBlank()) datos["pagoReferencia"] = base.pagoReferencia
+        if (base.pagoTransaccion.isNotBlank()) datos["pagoTransaccion"] = base.pagoTransaccion
         return datos
     }
+
     // ---------- Gestión del equipo (vendedores y administradores) ----------
 
     /**

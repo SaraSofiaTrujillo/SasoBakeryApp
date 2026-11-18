@@ -23,7 +23,8 @@ data class Pedido(
     val atiende: String,
     val fecha: String,
     val total: Int,
-    val estado: EstadoPedido
+    val estado: EstadoPedido,
+    val cancelado: Boolean = false
 )
 
 private fun formatoPesos(valor: Int): String =
@@ -57,14 +58,17 @@ class PedidosAdapter(
         val p = items[position]
         holder.tvCodigo.text = p.codigo
         holder.tvCliente.text = p.cliente
-        holder.tvAtiende.text = "Atendido por ${p.atiende}"
+        holder.tvAtiende.text = p.atiende
         holder.tvFecha.text = p.fecha
         holder.tvTotal.text = "\$ ${formatoPesos(p.total)}"
 
-        holder.tvEstado.text = p.estado.etiqueta
-        holder.tvEstado.backgroundTintList =
-            ColorStateList.valueOf(Color.parseColor(p.estado.fondo))
-        holder.tvEstado.setTextColor(Color.parseColor(p.estado.texto))
+        // Un pedido cancelado se muestra como "Cancelado" sin importar en qué estado iba
+        val etiqueta = if (p.cancelado) "Cancelado" else p.estado.etiqueta
+        val fondo = if (p.cancelado) "#FBE0E0" else p.estado.fondo
+        val colorTexto = if (p.cancelado) "#B23A3A" else p.estado.texto
+        holder.tvEstado.text = etiqueta
+        holder.tvEstado.backgroundTintList = ColorStateList.valueOf(Color.parseColor(fondo))
+        holder.tvEstado.setTextColor(Color.parseColor(colorTexto))
 
         holder.card.setOnClickListener { onClick(p) }
     }

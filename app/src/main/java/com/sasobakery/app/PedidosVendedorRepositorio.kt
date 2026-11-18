@@ -35,12 +35,29 @@ data class PedidoGestion(
     val clienteTelefono: String = "", // teléfono del comprador para que la tienda lo contacte
     // Ubicación GPS de la entrega a domicilio (null si el comprador no la capturó)
     val latitud: Double? = null,
-    val longitud: Double? = null
+    val longitud: Double? = null,
+    // Cómo se pagó el pedido
+    val pagoEstado: String = "",      // APROBADO (pago en línea) o CONTRA_ENTREGA
+    val pagoProveedor: String = "",   // PayU, si fue pago en línea
+    val pagoReferencia: String = "",  // referencia que la app envió a PayU
+    val pagoTransaccion: String = ""  // número de la transacción en PayU
 ) {
     val total: Int get() = productos.sumOf { it.subtotal }
 
     // ¿El pedido trae las coordenadas de entrega?
     val tieneUbicacion: Boolean get() = latitud != null && longitud != null
+
+    // Cómo se pagó el pedido, para mostrárselo al equipo. Los pedidos anteriores,
+    // que no guardaron el estado del pago, muestran el método que tenían.
+    val textoPago: String
+        get() = when (pagoEstado) {
+            "APROBADO" -> "Pagado en línea con PayU" +
+                    if (pagoReferencia.isNotBlank()) " · ref. $pagoReferencia" else ""
+            "CONTRA_ENTREGA" ->
+                if (tipo == TipoEntrega.ENTREGA) "Pago contra entrega: cobrar al entregar"
+                else "Pago al recoger: cobrar en tienda"
+            else -> metodoPago.ifBlank { "Sin dato" }
+        }
 
     // Datos del negocio guardados con el pedido. Los pedidos de ejemplo no los tienen
     // y usan los datos fijos de la tienda.

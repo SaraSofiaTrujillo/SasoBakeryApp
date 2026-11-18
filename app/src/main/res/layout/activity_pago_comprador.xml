@@ -198,21 +198,6 @@
                 android:nestedScrollingEnabled="false"
                 android:overScrollMode="never" />
 
-            <TextView
-                android:id="@+id/btnNuevaTarjeta"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:drawableStart="@drawable/ic_add"
-                android:drawablePadding="8dp"
-                android:drawableTint="#7B5EA7"
-                android:focusable="true"
-                android:padding="8dp"
-                android:text="Agregar nueva tarjeta"
-                android:textColor="#7B5EA7"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -318,7 +303,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:gravity="center"
-                android:text="✓  De tu tarjeta solo guardamos los últimos 4 dígitos"
+                android:text="✓  Pagas de forma segura en PayU. No guardamos datos de tu tarjeta"
                 android:textColor="#8A8494"
                 android:textSize="10sp" />
         </LinearLayout>

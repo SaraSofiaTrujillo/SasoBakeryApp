@@ -11,6 +11,9 @@
         android:name="android.hardware.location.gps"
         android:required="false" />
 
+    <!-- Internet: Firebase y el checkout de pagos -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".SasoApp"
         android:allowBackup="true"
@@ -116,6 +119,10 @@
         <!-- metodo de pago -->
         <activity
             android:name=".PagoCompradorActivity"
+            android:exported="false" />
+        <!-- Checkout de PayU (pago en línea) -->
+        <activity
+            android:name=".PayuCheckoutActivity"
             android:exported="false" />
         <!-- Confirmación y seguimiento del pedido -->
         <activity

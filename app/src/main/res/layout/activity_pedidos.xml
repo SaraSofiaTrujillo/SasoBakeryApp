@@ -97,8 +97,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:letterSpacing="0.1"
-                        android:text="HOY"
-                        android:textColor="#6B5B84"
+                        android:text="TOTAL"                        android:textColor="#6B5B84"
                         android:textSize="9sp"
                         android:textStyle="bold" />
 
@@ -108,7 +107,8 @@
                         android:layout_marginTop="6dp"
                         android:fontFamily="serif"
                         android:maxLines="1"
-                        android:text="48"
+                        android:id="@+id/tvTotalPedidos"
+                        android:text="0"
                         android:textColor="#2E2340"
                         android:textStyle="bold"
                         app:autoSizeMaxTextSize="22sp"
@@ -150,7 +150,8 @@
                         android:layout_marginTop="6dp"
                         android:fontFamily="serif"
                         android:maxLines="1"
-                        android:text="$ 2.480.500"
+                        android:id="@+id/tvVentas"
+                        android:text="$ 0"
                         android:textColor="#2E2340"
                         android:textStyle="bold"
                         app:autoSizeMaxTextSize="22sp"
@@ -161,8 +162,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="hoy"
-                        android:textColor="#3F7D5A"
+                        android:text="sin cancelar"                        android:textColor="#3F7D5A"
                         android:textSize="10sp" />
                 </LinearLayout>
 
@@ -191,7 +191,8 @@
                         android:layout_marginTop="6dp"
                         android:fontFamily="serif"
                         android:maxLines="1"
-                        android:text="2"
+                        android:id="@+id/tvAtencion"
+                        android:text="0"
                         android:textColor="#2E2340"
                         android:textStyle="bold"
                         app:autoSizeMaxTextSize="22sp"
@@ -202,8 +203,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="por resolver"
-                        android:textColor="#B04A63"
+                        android:text="nuevos por atender"                        android:textColor="#B04A63"
                         android:textSize="10sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -266,6 +266,17 @@
                 android:layout_marginEnd="-4dp"
                 android:nestedScrollingEnabled="false"
                 android:overScrollMode="never" />
+
+            <TextView
+                android:id="@+id/tvVacioPedidos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="Todavía no hay pedidos"
+                android:textColor="#8A8494"
+                android:textSize="13sp"
+                android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
 

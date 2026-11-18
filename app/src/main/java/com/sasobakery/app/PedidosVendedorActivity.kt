@@ -235,8 +235,7 @@ class PedidosVendedorActivity : AppCompatActivity() {
         }
         vista.findViewById<TextView>(R.id.tvDetTotal).text =
             "Total: ${formatearCop(p.total + p.envio)}"
-        vista.findViewById<TextView>(R.id.tvDetPago).text =
-            "Pago: ${p.metodoPago.ifBlank { "Sin dato" }}"
+        vista.findViewById<TextView>(R.id.tvDetPago).text = "Pago: ${p.textoPago}"
 
         // Acciones: solo las que se pueden hacer con el estado actual
         val btnAccion = vista.findViewById<TextView>(R.id.btnDetAccion)
