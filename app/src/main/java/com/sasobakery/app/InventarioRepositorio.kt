@@ -98,6 +98,13 @@ object InventarioRepositorio {
             .addOnFailureListener { alTerminar(mensajeDeError(it)) }
     }
 
+    /** Muestra u oculta un producto en el catálogo sin tocar sus demás datos. */
+    fun cambiarDisponibilidad(id: String, disponible: Boolean, alTerminar: (String?) -> Unit) {
+        db.collection(COLECCION).document(id).update("disponible", disponible)
+            .addOnSuccessListener { alTerminar(null) }
+            .addOnFailureListener { alTerminar(mensajeDeError(it)) }
+    }
+
     /** Resta unidades al stock real en Firestore (se usa al confirmar un pago). */
     fun descontarStock(id: String, cantidad: Int) {
         db.collection(COLECCION).document(id)

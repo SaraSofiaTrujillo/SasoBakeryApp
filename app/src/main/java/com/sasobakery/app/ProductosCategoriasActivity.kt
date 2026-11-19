@@ -14,6 +14,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.widget.TextView
 import com.google.firebase.firestore.ListenerRegistration
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.widget.ImageView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class ProductosCategoriasActivity : AppCompatActivity() {
 
@@ -21,7 +27,7 @@ class ProductosCategoriasActivity : AppCompatActivity() {
     private var productos: List<Producto> = emptyList()
     private var registro: ListenerRegistration? = null
 
-    private val adapter = ProductosAdapter()
+    private val adapter = ProductosAdapter(onClick = { abrirDetalle(it) })
     private lateinit var etBuscar: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,7 +104,9 @@ class ProductosCategoriasActivity : AppCompatActivity() {
             else -> EstadoProducto.ACTIVO
         },
         imagen = p.imagen,
-        imagenBase64 = p.imagenBase64
+        imagenBase64 = p.imagenBase64,
+        id = p.id,
+        stock = p.stock
     )
 
     // Activos = visibles en el catálogo; Ocultos = desactivados;
@@ -123,6 +131,86 @@ class ProductosCategoriasActivity : AppCompatActivity() {
                     p.categoria.lowercase().contains(texto)
         }
         adapter.submit(lista)
+    }
+
+    // ---------- Detalle del producto: ver, editar, activar o desactivar ----------
+
+    /** Ventana con los datos del producto y las acciones que puede hacer el administrador. */
+    private fun abrirDetalle(p: Producto) {
+        val producto = InventarioRepositorio.buscarPorId(p.id) ?: return
+        val dialogo = BottomSheetDialog(this)
+        val vista = layoutInflater.inflate(R.layout.dialog_producto_admin, null)
+
+        vista.findViewById<ImageView>(R.id.ivPaFoto)
+            .mostrarFotoDesde(producto.imagenBase64, producto.imagen, 12)
+        vista.findViewById<TextView>(R.id.tvPaNombre).text = producto.nombre
+        vista.findViewById<TextView>(R.id.tvPaCategoria).text = producto.categoria
+
+        val estado = vista.findViewById<TextView>(R.id.tvPaEstado)
+        val (fondo, texto) = when (p.estado) {
+            EstadoProducto.ACTIVO -> "#DDF2E6" to "#3F7D5A"
+            EstadoProducto.STOCK_BAJO -> "#FCEBD0" to "#B7791F"
+            EstadoProducto.AGOTADO -> "#FBE0E0" to "#B23A3A"
+            EstadoProducto.DESACTIVADO -> "#EFEAF5" to "#8A8494"
+        }
+        estado.text = p.estado.etiqueta
+        estado.backgroundTintList = ColorStateList.valueOf(Color.parseColor(fondo))
+        estado.setTextColor(Color.parseColor(texto))
+
+        vista.findViewById<TextView>(R.id.tvPaPrecio).text =
+            "Precio: ${formatearCop(producto.precio)}"
+        vista.findViewById<TextView>(R.id.tvPaStock).text =
+            "Stock: ${producto.stock} unidades"
+        vista.findViewById<TextView>(R.id.tvPaPorciones).text =
+            "Porciones: ${producto.porciones}" + if (producto.destacado) " · Destacado" else ""
+        vista.findViewById<TextView>(R.id.tvPaVisibilidad).text =
+            if (producto.disponible) "Visible en el catálogo" else "Oculto del catálogo"
+        vista.findViewById<TextView>(R.id.tvPaDescripcion).text =
+            producto.descripcion.ifBlank { "Sin descripción" }
+
+        // Editar: abre el mismo formulario que usa el vendedor
+        vista.findViewById<View>(R.id.btnPaEditar).setOnClickListener {
+            dialogo.dismiss()
+            val intent = Intent(this, ProductoFormularioActivity::class.java)
+            intent.putExtra(ProductoFormularioActivity.EXTRA_PRODUCTO_ID, producto.id)
+            startActivity(intent)
+        }
+
+        // Desactivar (con confirmación) o volver a activar
+        val btnVisibilidad = vista.findViewById<TextView>(R.id.btnPaCambiarVisibilidad)
+        btnVisibilidad.text = if (producto.disponible) "Desactivar" else "Activar"
+        btnVisibilidad.setOnClickListener {
+            dialogo.dismiss()
+            if (producto.disponible) confirmarDesactivar(producto)
+            else cambiarDisponibilidad(producto, true)
+        }
+
+        dialogo.setContentView(vista)
+        dialogo.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        dialogo.behavior.skipCollapsed = true
+        dialogo.show()
+    }
+
+    private fun confirmarDesactivar(p: ProductoInventario) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("¿Desactivar ${p.nombre}?")
+            .setMessage(
+                "Dejará de verse en el catálogo del comprador. Los pedidos que ya se " +
+                        "hicieron no cambian, y puedes activarlo de nuevo cuando quieras."
+            )
+            .setNegativeButton("Volver", null)
+            .setPositiveButton("Desactivar") { _, _ -> cambiarDisponibilidad(p, false) }
+            .show()
+    }
+
+    /** Muestra u oculta el producto en el catálogo. La lista se actualiza sola. */
+    private fun cambiarDisponibilidad(p: ProductoInventario, disponible: Boolean) {
+        InventarioRepositorio.cambiarDisponibilidad(p.id, disponible) { error ->
+            if (isFinishing || isDestroyed) return@cambiarDisponibilidad
+            val mensaje = error
+                ?: if (disponible) "${p.nombre} activado" else "${p.nombre} desactivado"
+            Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun proximamente() {

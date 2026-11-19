@@ -26,7 +26,9 @@ data class Producto(
     val precio: Int, // pesos colombianos (COP)
     val estado: EstadoProducto,
     @DrawableRes val imagen: Int? = null,
-    val imagenBase64: String? = null // foto guardada en Firestore
+    val imagenBase64: String? = null, // foto guardada en Firestore
+    val id: String = "",
+    val stock: Int = 0
 )
 
 // 28000 -> "28.000"
@@ -34,6 +36,7 @@ private fun formatoCop(valor: Int): String =
     String.format(Locale.US, "%,d", valor).replace(",", ".")
 
 class ProductosAdapter(
+    private val onClick: (Producto) -> Unit = {},
     private var items: List<Producto> = emptyList()
 ) : RecyclerView.Adapter<ProductosAdapter.VH>() {
 
@@ -55,8 +58,9 @@ class ProductosAdapter(
     override fun onBindViewHolder(holder: VH, position: Int) {
         val p = items[position]
         holder.tvNombre.text = p.nombre
-        holder.tvDetalle.text = "${p.categoria} · \$ ${formatoCop(p.precio)}"
+        holder.tvDetalle.text = "${p.categoria} · \$ ${formatoCop(p.precio)} · Stock ${p.stock}"
         holder.tvEstado.text = p.estado.etiqueta
+        holder.itemView.setOnClickListener { onClick(p) }
 
         // Foto de Firestore; si no hay, la del proyecto o un icono provisional
         holder.ivFoto.mostrarFotoDesde(p.imagenBase64, p.imagen, 12)

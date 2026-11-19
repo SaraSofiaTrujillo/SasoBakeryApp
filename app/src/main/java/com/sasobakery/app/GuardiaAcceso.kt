@@ -30,9 +30,13 @@ class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
     private val pantallasVendedor = setOf<Class<*>>(
         VendedorPrincipalActivity::class.java,
         ProductosInventarioActivity::class.java,
-        ProductoFormularioActivity::class.java,
         PedidosVendedorActivity::class.java,
         PerfilVendedorActivity::class.java
+    )
+
+    // Pantallas que pueden abrir tanto el vendedor como el administrador
+    private val pantallasEquipo = setOf<Class<*>>(
+        ProductoFormularioActivity::class.java
     )
 
     private val pantallasComprador = setOf<Class<*>>(
@@ -47,16 +51,17 @@ class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
         FavoritosCompradorActivity::class.java
     )
 
-    /** Rol que se necesita para abrir esta pantalla (null si es pública). */
-    private fun rolRequerido(pantalla: Class<*>): Rol? = when (pantalla) {
-        in pantallasAdmin -> Rol.ADMINISTRADOR
-        in pantallasVendedor -> Rol.VENDEDOR
-        in pantallasComprador -> Rol.COMPRADOR
+    /** Roles que pueden abrir esta pantalla (null si es pública). */
+    private fun rolesPermitidos(pantalla: Class<*>): Set<Rol>? = when (pantalla) {
+        in pantallasEquipo -> setOf(Rol.ADMINISTRADOR, Rol.VENDEDOR)
+        in pantallasAdmin -> setOf(Rol.ADMINISTRADOR)
+        in pantallasVendedor -> setOf(Rol.VENDEDOR)
+        in pantallasComprador -> setOf(Rol.COMPRADOR)
         else -> null
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        val requerido = rolRequerido(activity.javaClass) ?: return
+        val permitidos = rolesPermitidos(activity.javaClass) ?: return
 
         // 1) Pantalla privada sin sesión: al login
         if (!AuthRepositorio.haySesion()) {
@@ -67,7 +72,7 @@ class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
         // 2) Si el rol ya está en memoria (caso normal), se compara directamente
         val rolConocido = AuthRepositorio.rolEnCache()
         if (rolConocido != null) {
-            if (rolConocido != requerido) irA(activity, AuthRepositorio.destinoPara(rolConocido))
+            if (rolConocido !in permitidos) irA(activity, AuthRepositorio.destinoPara(rolConocido))
             return
         }
 
@@ -78,7 +83,7 @@ class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
 
             when (resultado) {
                 is ResultadoAuth.Exito ->
-                    if (resultado.rol != requerido) {
+                    if (resultado.rol !in permitidos) {
                         irA(activity, AuthRepositorio.destinoPara(resultado.rol))
                     }
                 is ResultadoAuth.Error ->
