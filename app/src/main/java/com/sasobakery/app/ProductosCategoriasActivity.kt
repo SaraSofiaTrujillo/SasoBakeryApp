@@ -21,10 +21,10 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
+// lista de productos del admin con resumen, busqueda y detalle
 class ProductosCategoriasActivity : AppCompatActivity() {
-
-    // Lista real: se llena con lo que llega de Firestore
     private var productos: List<Producto> = emptyList()
+    // escucha de firestore, se activa en onStart y se quita en onStop
     private var registro: ListenerRegistration? = null
 
     private val adapter = ProductosAdapter(onClick = { abrirDetalle(it) })
@@ -48,12 +48,12 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         etBuscar = findViewById(R.id.etBuscar)
         etBuscar.doAfterTextChanged { aplicarFiltro() }
 
+        // estos dos botones todavia no estan hechos
         findViewById<View>(R.id.btnMenu).setOnClickListener { proximamente() }
         findViewById<View>(R.id.btnCrear).setOnClickListener { proximamente() }
 
         findViewById<View>(R.id.tabCategorias).setOnClickListener { abrirCategorias() }
         findViewById<View>(R.id.btnGestionarCategorias).setOnClickListener { abrirCategorias() }
-        // "Resumen" vuelve al panel del administrador que ya estaba abierto
         findViewById<View>(R.id.navResumen).setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -72,8 +72,7 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         aplicarFiltro()
     }
 
-    // Escucha Firestore mientras la pantalla se ve: si el vendedor crea, edita o
-    // desactiva un producto, esta lista y los contadores se actualizan solos.
+    // productos en tiempo real
     override fun onStart() {
         super.onStart()
         registro = InventarioRepositorio.escuchar(
@@ -92,7 +91,7 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         registro = null
     }
 
-    // Convierte un producto de Firestore en el que muestra esta lista
+    // calcula el estado de cada producto, stock de 5 o menos es bajo
     private fun aProductoAdmin(p: ProductoInventario) = Producto(
         nombre = p.nombre,
         categoria = p.categoria,
@@ -100,7 +99,7 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         estado = when {
             !p.disponible -> EstadoProducto.DESACTIVADO
             p.stock <= 0 -> EstadoProducto.AGOTADO
-            p.stock <= 5 -> EstadoProducto.STOCK_BAJO // mismo criterio que el inventario
+            p.stock <= 5 -> EstadoProducto.STOCK_BAJO
             else -> EstadoProducto.ACTIVO
         },
         imagen = p.imagen,
@@ -109,8 +108,7 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         stock = p.stock
     )
 
-    // Activos = visibles en el catálogo; Ocultos = desactivados;
-    // Stock bajo = visibles con 5 unidades o menos (incluye agotados)
+    // contadores de arriba
     private fun actualizarEstadisticas(lista: List<ProductoInventario>) {
         findViewById<TextView>(R.id.tvActivos).text = lista.count { it.disponible }.toString()
         findViewById<TextView>(R.id.tvOcultos).text = lista.count { !it.disponible }.toString()
@@ -118,11 +116,13 @@ class ProductosCategoriasActivity : AppCompatActivity() {
             lista.count { it.disponible && it.stock <= 5 }.toString()
     }
 
+    // pantalla de categorias, esta reemplaza a la actual
     private fun abrirCategorias() {
         startActivity(Intent(this, CategoriasActivity::class.java))
         finish()
     }
 
+    // busca por nombre o categoria
     private fun aplicarFiltro() {
         val texto = etBuscar.text.toString().trim().lowercase()
         val lista = productos.filter { p ->
@@ -133,9 +133,7 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         adapter.submit(lista)
     }
 
-    // ---------- Detalle del producto: ver, editar, activar o desactivar ----------
-
-    /** Ventana con los datos del producto y las acciones que puede hacer el administrador. */
+    // hoja con el detalle del producto, desde ahi se edita o se activa y desactiva
     private fun abrirDetalle(p: Producto) {
         val producto = InventarioRepositorio.buscarPorId(p.id) ?: return
         val dialogo = BottomSheetDialog(this)
@@ -147,6 +145,7 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         vista.findViewById<TextView>(R.id.tvPaCategoria).text = producto.categoria
 
         val estado = vista.findViewById<TextView>(R.id.tvPaEstado)
+        // colores del estado
         val (fondo, texto) = when (p.estado) {
             EstadoProducto.ACTIVO -> "#DDF2E6" to "#3F7D5A"
             EstadoProducto.STOCK_BAJO -> "#FCEBD0" to "#B7791F"
@@ -168,7 +167,6 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         vista.findViewById<TextView>(R.id.tvPaDescripcion).text =
             producto.descripcion.ifBlank { "Sin descripción" }
 
-        // Editar: abre el mismo formulario que usa el vendedor
         vista.findViewById<View>(R.id.btnPaEditar).setOnClickListener {
             dialogo.dismiss()
             val intent = Intent(this, ProductoFormularioActivity::class.java)
@@ -176,7 +174,6 @@ class ProductosCategoriasActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // Desactivar (con confirmación) o volver a activar
         val btnVisibilidad = vista.findViewById<TextView>(R.id.btnPaCambiarVisibilidad)
         btnVisibilidad.text = if (producto.disponible) "Desactivar" else "Activar"
         btnVisibilidad.setOnClickListener {
@@ -191,6 +188,7 @@ class ProductosCategoriasActivity : AppCompatActivity() {
         dialogo.show()
     }
 
+    // avisa que deja de verse en el catalogo, los pedidos hechos no cambian
     private fun confirmarDesactivar(p: ProductoInventario) {
         MaterialAlertDialogBuilder(this)
             .setTitle("¿Desactivar ${p.nombre}?")
@@ -202,8 +200,7 @@ class ProductosCategoriasActivity : AppCompatActivity() {
             .setPositiveButton("Desactivar") { _, _ -> cambiarDisponibilidad(p, false) }
             .show()
     }
-
-    /** Muestra u oculta el producto en el catálogo. La lista se actualiza sola. */
+    // muestra u oculta el producto en el catalogo
     private fun cambiarDisponibilidad(p: ProductoInventario, disponible: Boolean) {
         InventarioRepositorio.cambiarDisponibilidad(p.id, disponible) { error ->
             if (isFinishing || isDestroyed) return@cambiarDisponibilidad

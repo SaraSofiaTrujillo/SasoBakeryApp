@@ -8,10 +8,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+// filas con los metodos de pago, resalta el elegido
 class MetodoPagoAdapter(
     private val onClick: (MetodoPago) -> Unit
 ) : RecyclerView.Adapter<MetodoPagoAdapter.VH>() {
-
     private var items: List<MetodoPago> = emptyList()
     private var idSeleccionado: String? = null
 
@@ -56,6 +56,7 @@ class MetodoPagoAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
+    // cambia los metodos y cual esta seleccionado
     fun submit(nuevos: List<MetodoPago>, seleccionado: String) {
         items = nuevos
         idSeleccionado = seleccionado

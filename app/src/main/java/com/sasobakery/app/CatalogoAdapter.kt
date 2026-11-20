@@ -10,12 +10,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+// tarjetas del catalogo del comprador, con favorito y boton de agregar
 class CatalogoAdapter(
     private val onProductoClick: (ProductoInventario) -> Unit,
     private val onAgregarClick: (ProductoInventario) -> Unit,
     private val onFavoritoClick: (ProductoInventario) -> Unit
 ) : RecyclerView.Adapter<CatalogoAdapter.VH>() {
-
     private var items: List<ProductoInventario> = emptyList()
 
     class VH(vista: View) : RecyclerView.ViewHolder(vista) {
@@ -46,6 +46,7 @@ class CatalogoAdapter(
         holder.tvNombre.text = p.nombre
         holder.tvPrecio.text = formatearCop(p.precio)
 
+        // si esta agotado se muestra la etiqueta y se apaga el boton
         val agotado = p.nivel == NivelStock.AGOTADO
         holder.tvAgotado.visibility = if (agotado) View.VISIBLE else View.GONE
         holder.btnAgregar.backgroundTintList =
@@ -70,6 +71,7 @@ class CatalogoAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
+    // cambia la lista y la vuelve a pintar
     fun submit(nuevos: List<ProductoInventario>) {
         items = nuevos
         notifyDataSetChanged()

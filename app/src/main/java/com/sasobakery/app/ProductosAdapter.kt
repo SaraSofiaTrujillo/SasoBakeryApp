@@ -12,7 +12,7 @@ import androidx.annotation.DrawableRes
 import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 
-// Estado con el que el administrador ve cada producto
+// estado que ve el admin
 enum class EstadoProducto(val etiqueta: String) {
     ACTIVO("Activo"),
     STOCK_BAJO("Stock bajo"),
@@ -20,26 +20,27 @@ enum class EstadoProducto(val etiqueta: String) {
     DESACTIVADO("Desactivado")
 }
 
+// producto como lo muestra la lista del admin
 data class Producto(
     val nombre: String,
     val categoria: String,
-    val precio: Int, // pesos colombianos (COP)
+    val precio: Int,
     val estado: EstadoProducto,
     @DrawableRes val imagen: Int? = null,
-    val imagenBase64: String? = null, // foto guardada en Firestore
+    val imagenBase64: String? = null,
     val id: String = "",
     val stock: Int = 0
 )
 
-// 28000 -> "28.000"
+// numero con puntos de miles
 private fun formatoCop(valor: Int): String =
     String.format(Locale.US, "%,d", valor).replace(",", ".")
 
+// filas de productos del admin
 class ProductosAdapter(
     private val onClick: (Producto) -> Unit = {},
     private var items: List<Producto> = emptyList()
 ) : RecyclerView.Adapter<ProductosAdapter.VH>() {
-
     class VH(vista: View) : RecyclerView.ViewHolder(vista) {
         val ivFoto: ImageView = vista.findViewById(R.id.ivFoto)
         val tvNombre: TextView = vista.findViewById(R.id.tvNombre)
@@ -62,10 +63,8 @@ class ProductosAdapter(
         holder.tvEstado.text = p.estado.etiqueta
         holder.itemView.setOnClickListener { onClick(p) }
 
-        // Foto de Firestore; si no hay, la del proyecto o un icono provisional
         holder.ivFoto.mostrarFotoDesde(p.imagenBase64, p.imagen, 12)
 
-        // Colores de la etiqueta: fondo a texto
         val (fondo, texto) = when (p.estado) {
             EstadoProducto.ACTIVO -> "#DDF2E6" to "#3F7D5A"
             EstadoProducto.STOCK_BAJO -> "#FCEBD0" to "#B7791F"
@@ -77,6 +76,7 @@ class ProductosAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
+    // cambia la lista y la vuelve a pintar
     fun submit(nuevos: List<Producto>) {
         items = nuevos
         notifyDataSetChanged()

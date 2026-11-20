@@ -11,11 +11,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
+// pantalla de inicio con animacion, despues decide a donde ir segun la sesion
 class SplashActivity : AppCompatActivity() {
-
+    // milisegundos que se queda antes de seguir
     private val duracionSplash = 2000L
 
     private val manejador = Handler(Looper.getMainLooper())
+    // tarea programada, se cancela en onDestroy
     private val irAlLogin = Runnable { abrirLogin() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,6 +34,7 @@ class SplashActivity : AppCompatActivity() {
         manejador.postDelayed(irAlLogin, duracionSplash)
     }
 
+    // los textos suben y aparecen uno tras otro, los circulos crecen
     private fun animar() {
         val logo = findViewById<View>(R.id.ivSplashLogo)
         val textos = listOf<View>(
@@ -77,11 +80,7 @@ class SplashActivity : AppCompatActivity() {
     }
 
     @Suppress("DEPRECATION")
-    /**
-     * Se ejecuta al terminar el splash. Si hay una sesión guardada, consulta el rol
-     * y abre su pantalla principal; si no hay sesión (o la cuenta ya no es válida),
-     * abre el login.
-     */
+    // sin sesion va al login, con sesion consulta el rol para abrir su pantalla
     private fun abrirLogin() {
         if (!AuthRepositorio.haySesion()) {
             irA(LoginActivity::class.java)
@@ -99,14 +98,14 @@ class SplashActivity : AppCompatActivity() {
     }
 
     @Suppress("DEPRECATION")
+    // abre la pantalla con fundido y cierra el splash
     private fun irA(destino: Class<*>) {
         startActivity(Intent(this, destino))
-        // Fundido suave hacia la siguiente pantalla
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        // Se cierra para que "Atrás" salga de la app y no vuelva al splash
         finish()
     }
 
+    // evita que la tarea programada corra si ya se cerro
     override fun onDestroy() {
         manejador.removeCallbacks(irAlLogin)
         super.onDestroy()

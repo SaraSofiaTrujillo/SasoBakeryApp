@@ -9,11 +9,11 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+// filas de pedidos del vendedor, con boton para avanzar el estado
 class PedidosVendedorAdapter(
     private val onDetalle: (PedidoGestion) -> Unit,
     private val onAccion: (PedidoGestion) -> Unit
 ) : RecyclerView.Adapter<PedidosVendedorAdapter.VH>() {
-
     private var items: List<PedidoGestion> = emptyList()
 
     class VH(vista: View) : RecyclerView.ViewHolder(vista) {
@@ -62,6 +62,7 @@ class PedidosVendedorAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
+    // cambia la lista y la vuelve a pintar
     fun submit(nuevos: List<PedidoGestion>) {
         items = nuevos
         notifyDataSetChanged()

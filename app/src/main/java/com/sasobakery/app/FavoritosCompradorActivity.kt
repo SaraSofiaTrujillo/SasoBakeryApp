@@ -12,8 +12,8 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.ListenerRegistration
 
+// productos que el comprador marco como favoritos
 class FavoritosCompradorActivity : AppCompatActivity() {
-
     private val adapter = CatalogoAdapter(
         onProductoClick = { abrirDetalle(it) },
         onAgregarClick = { agregarAlCarrito(it) },
@@ -41,12 +41,13 @@ class FavoritosCompradorActivity : AppCompatActivity() {
         rv.adapter = adapter
     }
 
+    // al volver se actualiza por si quito un favorito en otra pantalla
     override fun onResume() {
         super.onResume()
         refrescar()
     }
 
-    // Escucha los productos de Firestore mientras esta pantalla está visible
+    // si cambia el catalogo se actualiza la lista
     override fun onStart() {
         super.onStart()
         registro = InventarioRepositorio.escuchar(
@@ -61,6 +62,7 @@ class FavoritosCompradorActivity : AppCompatActivity() {
         registro = null
     }
 
+    // solo favoritos que sigan disponibles
     private fun refrescar() {
         val lista = InventarioRepositorio.obtenerCatalogo()
             .filter { FavoritosRepositorio.esFavorito(it.id) }
@@ -68,12 +70,14 @@ class FavoritosCompradorActivity : AppCompatActivity() {
         tvVacio.visibility = if (lista.isEmpty()) View.VISIBLE else View.GONE
     }
 
+    // abre el detalle del producto
     private fun abrirDetalle(p: ProductoInventario) {
         val intent = Intent(this, ProductoDetalleActivity::class.java)
         intent.putExtra(ProductoDetalleActivity.EXTRA_PRODUCTO_ID, p.id)
         startActivity(intent)
     }
 
+    // agrega una unidad y avisa el resultado
     private fun agregarAlCarrito(p: ProductoInventario) {
         val mensaje = when (CarritoRepositorio.agregar(p.id)) {
             ResultadoAgregar.AGREGADO -> "${p.nombre} agregado al carrito"

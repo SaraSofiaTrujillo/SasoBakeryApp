@@ -4,21 +4,12 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 
-/**
- * Acceso del administrador a la colección "usuarios" de Firestore: listar en tiempo
- * real, editar, activar/desactivar y eliminar. Crear cuentas nuevas está en
- * AuthRepositorio.crearUsuarioComoAdmin, porque además crea la cuenta de acceso.
- */
+// lo del admin con la coleccion usuarios, listar, editar, activar y eliminar
 object UsuariosRepositorio {
-
     private const val COLECCION = "usuarios"
     private val db get() = FirebaseFirestore.getInstance()
 
-    /**
-     * Escucha la lista de usuarios: [alCambiar] se llama una vez al empezar y de nuevo
-     * cada vez que alguien crea, edita o elimina un usuario. Hay que cancelar el
-     * ListenerRegistration que devuelve cuando la pantalla deja de verse.
-     */
+    // lista de usuarios en tiempo real, ordenada por nombre
     fun escuchar(
         alCambiar: (List<Usuario>) -> Unit,
         alFallar: (String) -> Unit
@@ -35,11 +26,11 @@ object UsuariosRepositorio {
                     iniciales = calcularIniciales(nombre),
                     nombre = nombre,
                     correo = doc.getString("correo").orEmpty(),
+                    // si el rol no se reconoce queda como comprador
                     rol = Rol.values().firstOrNull {
                         it.name.equals(doc.getString("rol"), ignoreCase = true)
                     } ?: Rol.COMPRADOR,
                     id = doc.id,
-                    // Si el campo no existe se considera activo, igual que en el login
                     activo = doc.getBoolean("activo") != false
                 )
             }.sortedBy { it.nombre.lowercase() }
@@ -47,7 +38,7 @@ object UsuariosRepositorio {
             alCambiar(lista)
         }
 
-    /** Guarda el nuevo nombre y rol de un usuario. [alTerminar] recibe null si salió bien. */
+    // cambia nombre y rol
     fun actualizar(id: String, nombre: String, rol: Rol, alTerminar: (String?) -> Unit) {
         db.collection(COLECCION).document(id)
             .update(mapOf("nombre" to nombre.trim(), "rol" to rol.name.lowercase()))
@@ -55,7 +46,7 @@ object UsuariosRepositorio {
             .addOnFailureListener { alTerminar(mensajeDeError(it)) }
     }
 
-    /** Activa o desactiva la cuenta. Una cuenta desactivada no puede iniciar sesión. */
+    // activa o desactiva la cuenta, una desactivada no puede entrar
     fun cambiarActivo(id: String, activo: Boolean, alTerminar: (String?) -> Unit) {
         db.collection(COLECCION).document(id)
             .update("activo", activo)
@@ -63,10 +54,7 @@ object UsuariosRepositorio {
             .addOnFailureListener { alTerminar(mensajeDeError(it)) }
     }
 
-    /**
-     * Elimina el perfil del usuario: sin perfil ya no puede entrar a la app. Su cuenta
-     * en Authentication no se borra desde aquí (eso exige permisos de servidor).
-     */
+    // borra el perfil, sin perfil ya no puede entrar
     fun eliminar(id: String, alTerminar: (String?) -> Unit) {
         db.collection(COLECCION).document(id)
             .delete()
@@ -74,12 +62,12 @@ object UsuariosRepositorio {
             .addOnFailureListener { alTerminar(mensajeDeError(it)) }
     }
 
-    /** true si [usuario] es el único administrador activo de [lista] (no se puede quitar). */
+    // true si es el unico admin activo, a ese no se le puede quitar el rol
     fun esUltimoAdminActivo(lista: List<Usuario>, usuario: Usuario): Boolean =
         usuario.rol == Rol.ADMINISTRADOR && usuario.activo &&
                 lista.count { it.rol == Rol.ADMINISTRADOR && it.activo } <= 1
 
-    /** "Ana María Gómez" -> "AG"; "Ana" -> "AN". */
+    // iniciales para el avatar, Ana Gomez da AG
     fun calcularIniciales(nombre: String): String {
         val palabras = nombre.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
         return when {
@@ -89,7 +77,7 @@ object UsuariosRepositorio {
         }
     }
 
-    // Convierte el error de Firestore en un mensaje claro en español
+    // mensaje segun el error
     private fun mensajeDeError(error: Exception): String =
         if (error is FirebaseFirestoreException) {
             when (error.code) {

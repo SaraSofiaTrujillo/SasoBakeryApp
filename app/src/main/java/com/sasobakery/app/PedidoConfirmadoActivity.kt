@@ -19,18 +19,20 @@ import androidx.core.view.updatePadding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.firestore.ListenerRegistration
 
+// seguimiento del pedido para el comprador, se actualiza en vivo
 class PedidoConfirmadoActivity : AppCompatActivity() {
-
     companion object {
+        // datos que llegan en el intent, el id es el que se usa para buscar
         const val EXTRA_CODIGO = "codigo_pedido"
-        const val EXTRA_PEDIDO_ID = "pedido_id" // id del pedido en Firestore
+        const val EXTRA_PEDIDO_ID = "pedido_id"
         const val EXTRA_DESDE_COMPRA = "desde_compra"
     }
 
     private var codigo = ""
     private var pedidoId = ""
-    private var pedido: PedidoGestion? = null // el pedido tal como está en Firestore
+    private var pedido: PedidoGestion? = null
     private var registro: ListenerRegistration? = null
+    // true si viene de pagar, asi atras lleva al catalogo y no al carrito
     private var desdeCompra = false
 
     private lateinit var tvTitulo: TextView
@@ -46,10 +48,10 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // sin id no hay pedido que mostrar
         pedidoId = intent.getStringExtra(EXTRA_PEDIDO_ID).orEmpty()
         desdeCompra = intent.getBooleanExtra(EXTRA_DESDE_COMPRA, false)
 
-        // Sin un pedido que mostrar, se cierra la pantalla
         if (pedidoId.isEmpty()) {
             Toast.makeText(this, "No se encontró el pedido", Toast.LENGTH_SHORT).show()
             finish()
@@ -59,6 +61,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_pedido_confirmado)
 
+        // ajusta los margenes para barras del sistema
         val cabecera = findViewById<View>(R.id.cabecera)
         val scroll = findViewById<View>(R.id.scrollSeguimiento)
         val baseArriba = cabecera.paddingTop
@@ -81,6 +84,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
         tvDireccion = findViewById(R.id.tvDireccion)
 
         findViewById<View>(R.id.btnAtras).setOnClickListener { salir() }
+        // atras hace lo mismo que la flecha
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 salir()
@@ -90,8 +94,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnAyuda).setOnClickListener { mostrarAyuda() }
     }
 
-    // Mientras se ve el seguimiento, escucha el pedido en Firestore: si el vendedor cambia
-    // su estado, la pantalla se actualiza sola.
+    // escucha el pedido para ver los cambios de estado al instante
     override fun onStart() {
         super.onStart()
         if (pedidoId.isEmpty()) return
@@ -117,7 +120,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
         registro = null
     }
 
-
+    // pinta el pedido segun su estado
     private fun mostrar() {
         val p = pedido ?: return
         val domicilio = p.tipo == TipoEntrega.ENTREGA
@@ -136,6 +139,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
             tvLlegada.text = textoLlegada(p, domicilio)
         }
 
+        // cuatro pasos, el texto cambia si es domicilio o recoger
         val titulos = listOf(
             "Pedido confirmado",
             "Preparando tus dulces",
@@ -143,6 +147,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
             if (domicilio) "Entregado" else "Recogido"
         )
 
+        // cuantos pasos van completos y cual esta en curso, -1 si ninguno
         val (completados, actual) = when {
             p.cancelado -> Pair(1, -1)
             p.estado == EstadoPedido.PENDIENTE -> Pair(1, -1)
@@ -171,6 +176,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
         }
     }
 
+    // arma la linea de tiempo, completado, en curso o pendiente
     private fun dibujarPasos(
         p: PedidoGestion,
         titulos: List<String>,
@@ -230,8 +236,9 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
         }
     }
 
+    // frase con el dia y la franja que eligio
     private fun textoLlegada(p: PedidoGestion, domicilio: Boolean): String {
-        if (p.fechaEntrega.isBlank()) return p.textoHorario // pedidos de ejemplo sin fecha
+        if (p.fechaEntrega.isBlank()) return p.textoHorario
 
         val dia = p.fechaEntrega.substringBefore(" ")
         val resto = p.fechaEntrega.substringAfter(" ", "")
@@ -245,7 +252,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
         }
     }
 
-
+    // datos de contacto de la tienda con boton para llamar
     private fun mostrarAyuda() {
         val pedido = pedido
         val negocio = pedido?.negocioMostrado ?: PerfilVendedorRepositorio.tienda().negocio
@@ -265,7 +272,7 @@ class PedidoConfirmadoActivity : AppCompatActivity() {
             .show()
     }
 
-
+    // si venia de pagar vuelve al catalogo
     private fun salir() {
         if (desdeCompra) {
             val intent = Intent(this, CatalogoCompradorActivity::class.java)

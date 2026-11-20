@@ -7,7 +7,7 @@
     android:background="#FDFBFF"
     android:orientation="vertical">
 
-    <!-- Barra superior: volver y título -->
+    <!-- Barra superior volver y titulo -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -45,7 +45,7 @@
             android:textStyle="bold" />
     </FrameLayout>
 
-    <!-- Aviso: el ambiente es de pruebas -->
+    <!-- Aviso el ambiente es de pruebas -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

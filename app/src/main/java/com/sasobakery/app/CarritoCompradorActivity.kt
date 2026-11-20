@@ -12,9 +12,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.ListenerRegistration
 
+// carrito del comprador, cantidades, totales y paso a la entrega
 class CarritoCompradorActivity : AppCompatActivity() {
-
+    // true cuando se muestran los botones de quitar
     private var modoEdicion = false
+    // escucha de firestore, se activa en onStart y se quita en onStop
     private var registro: ListenerRegistration? = null
 
     private val adapter = CarritoAdapter(
@@ -57,11 +59,13 @@ class CarritoCompradorActivity : AppCompatActivity() {
         rvCarrito.layoutManager = LinearLayoutManager(this)
         rvCarrito.adapter = adapter
 
+        // cambia entre editar y listo
         btnEditar.setOnClickListener {
             modoEdicion = !modoEdicion
             refrescar()
         }
 
+        // todavia no esta hecho
         findViewById<View>(R.id.btnCupon).setOnClickListener { mensaje("Próximamente") }
         findViewById<View>(R.id.btnContinuar).setOnClickListener {
             startActivity(android.content.Intent(this, EntregaCompradorActivity::class.java))
@@ -79,8 +83,7 @@ class CarritoCompradorActivity : AppCompatActivity() {
         refrescar()
     }
 
-    // Mientras se ve el carrito, escucha los productos reales: si cambia el precio o
-    // el stock se actualiza solo, y lo que ya no esté disponible se quita con un aviso.
+    // carga el carrito de la cuenta y revisa el stock en vivo
     override fun onStart() {
         super.onStart()
         CarritoRepositorio.cargarDeSesion {
@@ -88,6 +91,7 @@ class CarritoCompradorActivity : AppCompatActivity() {
         }
         registro = InventarioRepositorio.escuchar(
             alCambiar = {
+                // si un producto se agoto o bajo el stock el carrito se ajusta y se avisa
                 if (CarritoRepositorio.reconciliar()) {
                     mensaje("Actualizamos tu carrito según la disponibilidad de los productos")
                 }
@@ -103,6 +107,7 @@ class CarritoCompradorActivity : AppCompatActivity() {
         registro = null
     }
 
+    // agrega una unidad y avisa si no se puede
     private fun sumar(p: ProductoInventario) {
         when (CarritoRepositorio.agregar(p.id)) {
             ResultadoAgregar.AGREGADO -> Unit
@@ -113,6 +118,7 @@ class CarritoCompradorActivity : AppCompatActivity() {
         refrescar()
     }
 
+    // quita una unidad, si era la ultima sale del carrito
     private fun restar(p: ProductoInventario) {
         val eraLaUltima = CarritoRepositorio.cantidadDe(p.id) <= 1
         CarritoRepositorio.disminuir(p.id)
@@ -120,12 +126,14 @@ class CarritoCompradorActivity : AppCompatActivity() {
         refrescar()
     }
 
+    // saca el producto completo
     private fun quitar(p: ProductoInventario) {
         CarritoRepositorio.quitar(p.id)
         mensaje("${p.nombre} quitado del carrito")
         refrescar()
     }
 
+    // muestra el carrito o la pantalla vacia, y recalcula el total
     private fun refrescar() {
         val items = CarritoRepositorio.obtenerItems()
         val vacio = items.isEmpty()

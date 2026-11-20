@@ -15,6 +15,7 @@ import androidx.core.view.WindowInsetsCompat
 import java.util.Calendar
 import java.util.Locale
 
+// fila de ejemplo para el resumen del vendedor
 data class PedidoVendedor(
     val codigo: String,
     val hace: String,
@@ -24,14 +25,16 @@ data class PedidoVendedor(
     val estado: EstadoPedido
 )
 
+// pantalla principal del vendedor, el resumen usa datos de ejemplo por ahora
 class VendedorPrincipalActivity : AppCompatActivity() {
-
+    // valores de ejemplo, el nombre real se carga del perfil
     private val nombreVendedor = "Camila"
     private val pedidosHoy = 12
     private val porPreparar = 5
     private val stockBajo = 3
     private val ventasHoy = 648000
 
+    // pedidos de ejemplo, los reales estan en la pantalla de pedidos
     private val pedidosEnCurso = listOf(
         PedidoVendedor("#1048", "Hace 8 min", "Valentina M.", "2 productos · Recojo", 86000, EstadoPedido.EN_PREPARACION),
         PedidoVendedor("#1047", "Hace 8 min", "María F.", "1 producto · Entrega", 62000, EstadoPedido.PENDIENTE),
@@ -50,6 +53,7 @@ class VendedorPrincipalActivity : AppCompatActivity() {
         }
 
         mostrarEncabezado()
+        // al terminar de cargar el perfil se actualiza el nombre
         PerfilVendedorRepositorio.cargarDeSesion {
             if (!isFinishing && !isDestroyed) mostrarEncabezado()
         }
@@ -58,6 +62,7 @@ class VendedorPrincipalActivity : AppCompatActivity() {
         configurarBotones()
     }
 
+    // el saludo cambia segun la hora
     private fun mostrarEncabezado() {
         val hora = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         val saludo = when {
@@ -70,6 +75,7 @@ class VendedorPrincipalActivity : AppCompatActivity() {
             PerfilVendedorRepositorio.obtener().nombre.substringBefore(" ")
     }
 
+    // contadores de ejemplo
     private fun mostrarEstadisticas() {
         findViewById<TextView>(R.id.tvPedidosHoy).text = pedidosHoy.toString()
         findViewById<TextView>(R.id.tvPorPreparar).text = porPreparar.toString()
@@ -77,6 +83,7 @@ class VendedorPrincipalActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvVentasHoy).text = "\$ ${formatoPesos(ventasHoy)}"
     }
 
+    // arma una fila por cada pedido de ejemplo
     private fun mostrarPedidos() {
         val contenedor = findViewById<LinearLayout>(R.id.llPedidosEnCurso)
         contenedor.removeAllViews()
@@ -104,6 +111,7 @@ class VendedorPrincipalActivity : AppCompatActivity() {
         }
     }
 
+    // accesos a pedidos, inventario y perfil, los demas botones aun no estan hechos
     private fun configurarBotones() {
         findViewById<View>(R.id.btnNotificaciones).setOnClickListener { proximamente() }
         findViewById<View>(R.id.tvVerTodos).setOnClickListener { abrirPedidos() }
@@ -118,6 +126,7 @@ class VendedorPrincipalActivity : AppCompatActivity() {
         findViewById<View>(R.id.navMas).setOnClickListener { abrirPerfil() }
     }
 
+    // numero con puntos de miles
     private fun formatoPesos(valor: Int): String =
         String.format(Locale.US, "%,d", valor).replace(",", ".")
     private fun abrirInventario() {

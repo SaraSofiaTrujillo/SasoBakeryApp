@@ -14,7 +14,7 @@
         android:paddingEnd="20dp"
         android:paddingBottom="24dp">
 
-        <!-- Código y estado -->
+        <!-- Codigo y estado -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -192,7 +192,6 @@
             android:textColor="#8A8494"
             android:textSize="12sp" />
 
-        <!-- Acciones (se ocultan si el pedido ya terminó o está cancelado) -->
         <LinearLayout
             android:id="@+id/llDetAcciones"
             android:layout_width="match_parent"

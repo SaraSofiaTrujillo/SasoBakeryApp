@@ -16,9 +16,9 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.firestore.ListenerRegistration
 
-/** Panel general del administrador: resumen y acceso a pedidos, productos, usuarios y negocio. */
+// pantalla principal del admin, desde aqui va a usuarios, productos y pedidos
 class MainActivity : AppCompatActivity() {
-
+    // escucha de los datos del negocio, se activa en onStart y se quita en onStop
     private var registroNegocio: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,8 +45,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Mantiene al día los datos del negocio mientras el panel se ve, para que la ventana
-    // de edición siempre muestre lo último guardado
+    // deja cargados los datos del negocio para el resto de pantallas
     override fun onStart() {
         super.onStart()
         registroNegocio = NegocioRepositorio.escuchar(
@@ -61,7 +60,7 @@ class MainActivity : AppCompatActivity() {
         registroNegocio = null
     }
 
-    /** Ventana inferior para ver y editar los datos de contacto de la tienda. */
+    // hoja para editar los datos de la tienda, solo el admin
     private fun mostrarDatosNegocio() {
         val dialogo = BottomSheetDialog(this)
         val vista = layoutInflater.inflate(R.layout.dialog_datos_negocio, null)
@@ -72,7 +71,6 @@ class MainActivity : AppCompatActivity() {
         val etHorario = vista.findViewById<EditText>(R.id.etNegocioHorario)
         val btnGuardar = vista.findViewById<TextView>(R.id.btnGuardarNegocio)
 
-        // Se muestran los datos que hay ahora
         val actual = NegocioRepositorio.obtener()
         etNombre.setText(actual.nombre)
         etTelefono.setText(actual.telefono)
@@ -87,6 +85,7 @@ class MainActivity : AppCompatActivity() {
             val direccion = etDireccion.text.toString().trim()
             val horario = etHorario.text.toString().trim()
 
+            // valida todo antes de guardar, cada error se muestra en su campo
             if (nombre.length < 2) {
                 etNombre.error = "Escribe el nombre del negocio"
                 etNombre.requestFocus()
@@ -108,6 +107,7 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            // bloquea el boton mientras guarda
             btnGuardar.isEnabled = false
             btnGuardar.text = "Guardando…"
             NegocioRepositorio.guardar(DatosNegocio(nombre, telefono, direccion, horario)) { error ->
@@ -124,14 +124,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialogo.setContentView(vista)
-        // Se abre completa y el teclado no tapa los campos
         dialogo.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         dialogo.behavior.skipCollapsed = true
         dialogo.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         dialogo.show()
     }
 
-    // Pide confirmación antes de cerrar la sesión
     private fun confirmarCerrarSesion() {
         MaterialAlertDialogBuilder(this)
             .setTitle("¿Cerrar sesión?")
@@ -141,7 +139,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // Cierra la sesión de Firebase y borra el historial: Atrás no regresa al panel
+    // borra la sesion y deja el login sin pantallas atras
     private fun cerrarSesion() {
         AuthRepositorio.cerrarSesion()
         val intent = Intent(this, LoginActivity::class.java)

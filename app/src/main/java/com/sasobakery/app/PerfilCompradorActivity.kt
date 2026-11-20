@@ -22,8 +22,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.firestore.ListenerRegistration
 
+// perfil del comprador, datos, resumen de pedidos y opciones de cuenta
 class PerfilCompradorActivity : AppCompatActivity() {
-
     private lateinit var tvIniciales: TextView
     private lateinit var tvNombre: TextView
     private lateinit var tvCorreo: TextView
@@ -33,6 +33,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
     private lateinit var tvBadgePedidos: TextView
     private lateinit var tvSubDirecciones: TextView
     private lateinit var tvSubHuella: TextView
+    // escucha de mis pedidos, se activa en onStart y se quita en onStop
     private var registroPedidos: ListenerRegistration? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +53,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         tvPuntos = findViewById(R.id.tvPuntos)
         tvBadgeNav = findViewById(R.id.tvBadgeNav)
 
+        // las filas del menu se arman por codigo con el mismo layout
         crearFilas()
 
         findViewById<View>(R.id.btnEditarPerfil).setOnClickListener { mostrarEditar() }
@@ -60,6 +62,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         findViewById<View>(R.id.navCarrito).setOnClickListener { irAlCarrito() }
     }
 
+    // al volver se recarga el perfil de la cuenta
     override fun onResume() {
         super.onResume()
         mostrarPerfil()
@@ -68,7 +71,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         }
     }
 
-    // Escucha los pedidos reales mientras el perfil se ve, para sus cifras
+    // pedidos en tiempo real para los contadores y puntos
     override fun onStart() {
         super.onStart()
         registroPedidos = PedidosRepositorio.escucharMios(
@@ -86,6 +89,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         registroPedidos = null
     }
 
+    // arma las filas de actividad y de opciones
     private fun crearFilas() {
         val actividad = findViewById<LinearLayout>(R.id.layoutActividad)
         val opciones = findViewById<LinearLayout>(R.id.layoutOpciones)
@@ -120,6 +124,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         ) { confirmarCerrarSesion() }
     }
 
+    // infla una fila, el rojo es para cerrar sesion
     private fun agregarFila(
         contenedor: LinearLayout,
         icono: Int,
@@ -148,6 +153,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         return fila
     }
 
+    // linea fina entre filas
     private fun agregarDivisor(contenedor: LinearLayout) {
         val linea = View(this)
         val alto = (1 * resources.displayMetrics.density).toInt().coerceAtLeast(1)
@@ -156,6 +162,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         contenedor.addView(linea)
     }
 
+    // pinta datos, contadores, direccion, huella y carrito
     private fun mostrarPerfil() {
         val p = PerfilCompradorRepositorio.obtener()
         tvIniciales.text = p.iniciales
@@ -182,6 +189,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         tvBadgeNav.text = if (total > 9) "9+" else total.toString()
     }
 
+    // hoja para cambiar nombre y telefono, el correo no se edita
     private fun mostrarEditar() {
         val actual = PerfilCompradorRepositorio.obtener()
         val dialogo = BottomSheetDialog(this)
@@ -225,6 +233,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         abrirHoja(dialogo, vista)
     }
 
+    // hoja para guardar la direccion de entrega
     private fun mostrarDireccion() {
         val dialogo = BottomSheetDialog(this)
         val vista = layoutInflater.inflate(R.layout.dialog_direccion_entrega, null)
@@ -255,6 +264,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         abrirHoja(dialogo, vista)
     }
 
+    // abre la hoja ya expandida y con el teclado sin tapar los campos
     private fun abrirHoja(dialogo: BottomSheetDialog, vista: View) {
         dialogo.setContentView(vista)
         dialogo.behavior.state = BottomSheetBehavior.STATE_EXPANDED
@@ -263,6 +273,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         dialogo.show()
     }
 
+    // solo informa los metodos disponibles
     private fun mostrarMetodosPago() {
         val texto = PagoRepositorio.metodos().joinToString("\n\n") { "${it.titulo}\n${it.detalle}" }
         MaterialAlertDialogBuilder(this)
@@ -272,6 +283,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
             .show()
     }
 
+    // interruptor sencillo, solo queda mientras la app esta abierta
     private fun mostrarNotificaciones() {
         val marcado = booleanArrayOf(PerfilCompradorRepositorio.notificaciones)
         MaterialAlertDialogBuilder(this)
@@ -296,16 +308,15 @@ class PerfilCompradorActivity : AppCompatActivity() {
             .show()
     }
 
+    // borra la sesion y deja el login sin pantallas atras
     private fun cerrarSesion() {
-        AuthRepositorio.cerrarSesion() // cierra la sesión de Firebase
+        AuthRepositorio.cerrarSesion()
         val intent = Intent(this, LoginActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)
     }
 
-    // ---------- Acceso con huella ----------
-
-    // Muestra en el perfil si la huella está activada para la cuenta con sesión iniciada
+    // dice si la huella esta activada en este celular
     private fun actualizarTextoHuella() {
         val correo = AuthRepositorio.correoActual().orEmpty()
         tvSubHuella.text = when {
@@ -316,7 +327,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         }
     }
 
-    // Activa o desactiva la huella según el estado actual
+    // si esta activada ofrece desactivarla, si no revisa que el celular pueda usarla
     private fun gestionarHuella() {
         val correo = AuthRepositorio.correoActual().orEmpty()
 
@@ -351,10 +362,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Para activar la huella hace falta la contraseña de la cuenta: se pide una vez,
-     * se comprueba con Firebase y se guarda cifrada, protegida por la huella.
-     */
+    // la clave se pide una vez para guardarla cifrada
     private fun pedirClaveParaHuella(correo: String) {
         val densidad = resources.displayMetrics.density
         val campo = EditText(this).apply {
@@ -384,7 +392,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
             .show()
     }
 
-    // Comprueba la contraseña en Firebase y, si es correcta, pide la huella para guardarla
+    // primero comprueba la clave con firebase y despues pide la huella
     private fun verificarClaveYActivar(correo: String, clave: String) {
         if (clave.isEmpty()) {
             mensaje("Escribe tu contraseña")
@@ -403,6 +411,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         }
     }
 
+    // vuelve al catalogo que ya estaba abierto
     private fun irAlCatalogo() {
         val intent = Intent(this, CatalogoCompradorActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -410,6 +419,7 @@ class PerfilCompradorActivity : AppCompatActivity() {
         finish()
     }
 
+    // abre el carrito
     private fun irAlCarrito() {
         val intent = Intent(this, CarritoCompradorActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)

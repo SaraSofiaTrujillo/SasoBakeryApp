@@ -6,18 +6,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 
-/**
- * Guardia de acceso: la app la registra una sola vez (ver SasoApp) y se ejecuta cada
- * vez que se abre una pantalla. Hace dos comprobaciones:
- *  1) Si la pantalla es privada y no hay sesión iniciada, manda al login.
- *  2) Si la pantalla es de otro rol, manda a la pantalla principal del rol del usuario.
- * Así ningún usuario puede ver pantallas que no le corresponden, aunque Android
- * restaure la app en una pantalla interna.
- */
+// revisa cada pantalla que se abre, sin sesion va al login y de otro rol va a la suya
 class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
-
-    // Pantallas de cada rol. Las que no están en estas listas (splash, login, registro
-    // y recuperación de contraseña) son públicas y no se vigilan.
+    // pantallas de cada rol, las que no estan aqui son publicas (login, registro)
     private val pantallasAdmin = setOf<Class<*>>(
         MainActivity::class.java,
         PedidosActivity::class.java,
@@ -34,7 +25,7 @@ class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
         PerfilVendedorActivity::class.java
     )
 
-    // Pantallas que pueden abrir tanto el vendedor como el administrador
+    // las que pueden abrir vendedor y admin
     private val pantallasEquipo = setOf<Class<*>>(
         ProductoFormularioActivity::class.java
     )
@@ -51,7 +42,7 @@ class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
         FavoritosCompradorActivity::class.java
     )
 
-    /** Roles que pueden abrir esta pantalla (null si es pública). */
+    // que roles pueden abrir cada pantalla, null si es publica
     private fun rolesPermitidos(pantalla: Class<*>): Set<Rol>? = when (pantalla) {
         in pantallasEquipo -> setOf(Rol.ADMINISTRADOR, Rol.VENDEDOR)
         in pantallasAdmin -> setOf(Rol.ADMINISTRADOR)
@@ -60,24 +51,24 @@ class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
         else -> null
     }
 
+    // se ejecuta cada vez que se abre una pantalla
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         val permitidos = rolesPermitidos(activity.javaClass) ?: return
 
-        // 1) Pantalla privada sin sesión: al login
+        // sin sesion va al login
         if (!AuthRepositorio.haySesion()) {
             irA(activity, LoginActivity::class.java)
             return
         }
 
-        // 2) Si el rol ya está en memoria (caso normal), se compara directamente
+        // si ya se sabe el rol solo se compara
         val rolConocido = AuthRepositorio.rolEnCache()
         if (rolConocido != null) {
             if (rolConocido !in permitidos) irA(activity, AuthRepositorio.destinoPara(rolConocido))
             return
         }
 
-        // 3) La app se reinició y Android abrió esta pantalla directamente: se consulta
-        //    el rol (y si la cuenta sigue activa) en Firestore antes de dejar al usuario aquí
+        // si la app se reinicio hay que consultar el rol en firestore
         AuthRepositorio.rolDeSesionActual { resultado ->
             if (activity.isFinishing || activity.isDestroyed) return@rolDeSesionActual
 
@@ -86,9 +77,8 @@ class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
                     if (resultado.rol !in permitidos) {
                         irA(activity, AuthRepositorio.destinoPara(resultado.rol))
                     }
+                // cuenta rechazada vuelve al login, si fue solo la red se queda donde esta
                 is ResultadoAuth.Error ->
-                    // Si la cuenta fue rechazada (desactivada o sin perfil) la sesión ya
-                    // se cerró. Si fue solo un problema de red, se deja al usuario donde está.
                     if (!AuthRepositorio.haySesion()) {
                         Toast.makeText(activity, resultado.mensaje, Toast.LENGTH_LONG).show()
                         irA(activity, LoginActivity::class.java)
@@ -97,7 +87,7 @@ class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
         }
     }
 
-    // Abre la pantalla indicada y borra el historial, para que Atrás no vuelva a la anterior
+    // abre la pantalla y borra el historial para que atras no vuelva
     private fun irA(activity: Activity, destino: Class<*>) {
         val intent = Intent(activity, destino)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -105,7 +95,7 @@ class GuardiaAcceso : Application.ActivityLifecycleCallbacks {
         activity.finish()
     }
 
-    // Los demás eventos del ciclo de vida no se usan, pero Android obliga a declararlos
+    // estos no se usan pero android obliga a declararlos
     override fun onActivityStarted(activity: Activity) {}
     override fun onActivityResumed(activity: Activity) {}
     override fun onActivityPaused(activity: Activity) {}

@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
+// una linea del carrito, producto y cantidad
 data class ItemCarrito(
     val producto: ProductoInventario,
     val cantidad: Int
@@ -11,6 +12,7 @@ data class ItemCarrito(
     val subtotal: Int get() = producto.precio * cantidad
 }
 
+// resultado de agregar un producto
 enum class ResultadoAgregar {
     AGREGADO,
     AGOTADO,
@@ -18,36 +20,24 @@ enum class ResultadoAgregar {
     NO_DISPONIBLE
 }
 
-/**
- * Carrito del comprador con la sesión iniciada. Guarda solo "id del producto -> cantidad":
- * nombre, precio, foto y stock se leen siempre de los productos reales de Firestore.
- * Cada cambio se guarda en la colección "carritos", en el documento del comprador (su uid),
- * así el carrito sigue ahí al cerrar y abrir la app.
- */
+// carrito del comprador, guarda id y cantidad y se sube a firestore
 object CarritoRepositorio {
-
     private const val COLECCION = "carritos"
     private val db get() = FirebaseFirestore.getInstance()
 
-    // id del producto -> cantidad en el carrito
+    // id del producto y su cantidad
     private val cantidades = linkedMapOf<String, Int>()
 
-    // De qué cuenta es el carrito que ya se leyó de Firestore (null = todavía no)
+    // cuenta de la que se cargo el carrito
     private var uidCargado: String? = null
 
-    // ---------- Firestore ----------
-
-    /**
-     * Lee el carrito guardado de esta cuenta y avisa cuando termina. Si ya estaba
-     * cargado, avisa de inmediato. Lo agregado antes de que llegue la lectura no se pierde.
-     */
+    // trae el carrito guardado, lo que se agrego antes se junta
     fun cargarDeSesion(alTerminar: () -> Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         if (uid == uidCargado) {
             alTerminar()
             return
         }
-        // Si lo que hay en memoria era de otra cuenta, se descarta
         if (uidCargado != null) cantidades.clear()
 
         db.collection(COLECCION).document(uid).get()
@@ -65,8 +55,7 @@ object CarritoRepositorio {
             }
     }
 
-    // Escribe el carrito actual. No hace nada hasta que se haya leído el guardado,
-    // para no borrar por error lo que ya había en Firestore.
+    // sube el carrito a firestore
     private fun guardar() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         if (uid != uidCargado) return
@@ -78,19 +67,14 @@ object CarritoRepositorio {
         )
     }
 
-    /** Al cerrar sesión: se olvida el carrito de memoria (en Firestore queda guardado). */
+    // al cerrar sesion, en firestore queda guardado
     fun limpiarMemoria() {
         cantidades.clear()
         uidCargado = null
     }
 
-    /**
-     * Ajusta el carrito a lo que hay en los productos reales: quita los desactivados,
-     * agotados o que ya no existen, y baja la cantidad si supera el stock.
-     * Devuelve true si cambió algo (para avisarle al comprador).
-     */
+    // quita lo agotado o desactivado y ajusta cantidades, true si cambio algo
     fun reconciliar(): Boolean {
-        // Mientras no lleguen los productos reales no se ajusta nada
         if (!InventarioRepositorio.estaCargado()) return false
 
         var cambio = false
@@ -110,10 +94,9 @@ object CarritoRepositorio {
         return cambio
     }
 
-    // ---------- Cambios en el carrito ----------
-
     fun agregar(idProducto: String): ResultadoAgregar = agregar(idProducto, 1)
 
+    // agrega si esta disponible y no pasa el stock
     fun agregar(idProducto: String, cantidad: Int): ResultadoAgregar {
         val producto = InventarioRepositorio.buscarPorId(idProducto)
         if (producto == null || !producto.disponible) return ResultadoAgregar.NO_DISPONIBLE
@@ -128,12 +111,14 @@ object CarritoRepositorio {
         return ResultadoAgregar.AGREGADO
     }
 
+    // cuantas unidades mas se pueden agregar
     fun unidadesAgregables(idProducto: String): Int {
         val producto = InventarioRepositorio.buscarPorId(idProducto) ?: return 0
         if (!producto.disponible) return 0
         return (producto.stock - cantidadDe(idProducto)).coerceAtLeast(0)
     }
 
+    // resta una, si llega a cero lo quita
     fun disminuir(idProducto: String) {
         val actual = cantidades[idProducto] ?: return
         if (actual <= 1) cantidades.remove(idProducto) else cantidades[idProducto] = actual - 1
@@ -150,13 +135,11 @@ object CarritoRepositorio {
         guardar()
     }
 
-    // ---------- Consultas ----------
-
     fun cantidadDe(idProducto: String): Int = cantidades[idProducto] ?: 0
 
-    // Solo cuenta lo que realmente se puede comprar (productos reales y disponibles)
     fun cantidadTotal(): Int = obtenerItems().sumOf { it.cantidad }
 
+    // arma los items con los productos reales
     fun obtenerItems(): List<ItemCarrito> =
         cantidades.mapNotNull { (id, cantidad) ->
             InventarioRepositorio.buscarPorId(id)

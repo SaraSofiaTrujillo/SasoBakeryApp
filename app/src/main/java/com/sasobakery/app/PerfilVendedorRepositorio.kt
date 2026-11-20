@@ -3,7 +3,7 @@ package com.sasobakery.app
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-// Datos del vendedor (personales) y de la tienda (los define el administrador)
+// datos del vendedor mas los de la tienda
 data class PerfilVendedor(
     val nombre: String,
     val correo: String,
@@ -12,7 +12,7 @@ data class PerfilVendedor(
     val direccion: String,
     val horario: String
 ) {
-    // "Camila Ríos" -> "CR" (para el avatar)
+    // primeras letras de las dos primeras palabras del nombre
     val iniciales: String
         get() = nombre.trim()
             .split(" ")
@@ -21,24 +21,18 @@ data class PerfilVendedor(
             .joinToString("") { it.first().uppercase() }
 }
 
-/**
- * Perfil del vendedor con la sesión iniciada. Nombre y teléfono personal vienen de su
- * documento en Firestore (usuarios/{uid}) y el correo de Firebase Authentication.
- * Los datos del negocio NO son del vendedor: vienen de NegocioRepositorio y solo los
- * modifica el administrador.
- */
+// perfil del vendedor en memoria, el negocio sale de NegocioRepositorio
 object PerfilVendedorRepositorio {
-
     private var nombre = ""
     private var correo = ""
     private var telefono = ""
-    private var uidCargado: String? = null // de qué cuenta son los datos guardados en memoria
+    // cuenta a la que pertenece el perfil cargado
+    private var uidCargado: String? = null
 
-    /** El perfil del vendedor en sesión, con los datos actuales del negocio. */
+    // devuelve el perfil, si cambio la cuenta lo reinicia con el correo
     fun obtener(): PerfilVendedor {
         val usuario = FirebaseAuth.getInstance().currentUser
         if (usuario?.uid != uidCargado) {
-            // Todavía no llegó el perfil de esta cuenta: se muestra algo provisional
             correo = usuario?.email.orEmpty()
             nombre = correo.substringBefore("@")
             telefono = ""
@@ -54,7 +48,7 @@ object PerfilVendedorRepositorio {
         )
     }
 
-    /** Datos del negocio para mostrarlos al comprador (recogida y ayuda). */
+    // solo los datos de la tienda, se usan en los pedidos
     fun tienda(): PerfilVendedor {
         val negocio = NegocioRepositorio.obtener()
         return PerfilVendedor(
@@ -67,10 +61,7 @@ object PerfilVendedorRepositorio {
         )
     }
 
-    /**
-     * Lee el perfil del vendedor desde Firestore y avisa cuando termina.
-     * Si ya estaba cargado para esta cuenta, avisa de inmediato.
-     */
+    // trae nombre y telefono de firestore, si ya estaban cargados avisa de una
     fun cargarDeSesion(alTerminar: () -> Unit) {
         val usuario = FirebaseAuth.getInstance().currentUser ?: return
         if (usuario.uid == uidCargado) {
@@ -87,10 +78,7 @@ object PerfilVendedorRepositorio {
             }
     }
 
-    /**
-     * Guarda el nombre y el teléfono personal en Firestore. [alTerminar] recibe null si
-     * salió bien, o el mensaje de error. El negocio no se guarda aquí.
-     */
+    // guarda nombre y telefono en firestore
     fun guardar(nuevo: PerfilVendedor, alTerminar: (String?) -> Unit = {}) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {

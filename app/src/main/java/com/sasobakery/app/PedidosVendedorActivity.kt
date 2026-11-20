@@ -21,7 +21,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.ActivityNotFoundException
 
-// Filtros de la pantalla de gestión de pedidos del vendedor
+// filtros de la lista de pedidos del vendedor
 enum class FiltroGestion(val etiqueta: String) {
     TODAS("Todas"),
     NUEVOS("Nuevos"),
@@ -29,21 +29,19 @@ enum class FiltroGestion(val etiqueta: String) {
     LISTOS("Listos")
 }
 
-/**
- * Pedidos de la tienda para el equipo (vendedores y administradores). Lee los pedidos
- * reales de Firestore en tiempo real y guarda ahí los cambios de estado.
- */
+// lista de pedidos para el vendedor, con filtros y acciones para avanzar o cancelar
 class PedidosVendedorActivity : AppCompatActivity() {
-
     private val adapter = PedidosVendedorAdapter(
         onDetalle = { pedido -> mostrarDetalle(pedido) },
         onAccion = { pedido -> avanzar(pedido) }
     )
     private var filtroActual = FiltroGestion.TODAS
 
-    private var pedidos: List<PedidoGestion> = emptyList() // los pedidos reales de Firestore
-    private var cargado = false // ya llegó la primera lectura
-    private var enCurso = false // evita dos cambios de estado seguidos por un doble toque
+    private var pedidos: List<PedidoGestion> = emptyList()
+    private var cargado = false
+    // evita doble toque mientras se actualiza un pedido
+    private var enCurso = false
+    // escucha de firestore, se activa en onStart y se quita en onStop
     private var registro: ListenerRegistration? = null
 
     private lateinit var tvNuevos: TextView
@@ -87,21 +85,18 @@ class PedidosVendedorActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnNotificaciones).setOnClickListener { proximamente() }
 
-        // Menú inferior: Pedidos ya es esta pantalla
         findViewById<View>(R.id.navResumen).setOnClickListener { finish() }
         findViewById<View>(R.id.navProductos).setOnClickListener {
             startActivity(Intent(this, ProductosInventarioActivity::class.java))
             finish()
         }
-        // "Más" abre el perfil del vendedor
         findViewById<View>(R.id.navMas).setOnClickListener {
             startActivity(Intent(this, PerfilVendedorActivity::class.java))
             finish()
         }
     }
 
-    // Mientras la pantalla se ve, escucha los pedidos reales: un pedido nuevo del
-    // comprador aparece solo, y los cambios de estado se reflejan al instante.
+    // pedidos en tiempo real
     override fun onStart() {
         super.onStart()
         registro = PedidosRepositorio.escucharTodos(
@@ -120,8 +115,7 @@ class PedidosVendedorActivity : AppCompatActivity() {
         registro = null
     }
 
-    // ---------- Regla única: se usa para CONTAR y para FILTRAR ----------
-
+    // si el pedido entra en el filtro, los cancelados solo salen en todas
     private fun coincide(p: PedidoGestion, filtro: FiltroGestion): Boolean = when (filtro) {
         FiltroGestion.TODAS -> true
         FiltroGestion.NUEVOS -> !p.cancelado && p.estado == EstadoPedido.PENDIENTE
@@ -129,9 +123,7 @@ class PedidosVendedorActivity : AppCompatActivity() {
         FiltroGestion.LISTOS -> !p.cancelado && p.estado == EstadoPedido.LISTO
     }
 
-    // ---------- Actualización de pantalla ----------
-
-    /** Recalcula contadores, estilo de chips y la lista visible. */
+    // actualiza contadores, chips y lista
     private fun refrescar() {
         tvNuevos.text = pedidos.count { coincide(it, FiltroGestion.NUEVOS) }.toString()
         tvPreparando.text = pedidos.count { coincide(it, FiltroGestion.EN_PROCESO) }.toString()
@@ -150,13 +142,10 @@ class PedidosVendedorActivity : AppCompatActivity() {
 
         val lista = pedidos.filter { coincide(it, filtroActual) }
         adapter.submit(lista)
-        // El mensaje de "vacío" solo se muestra cuando ya llegó la primera lectura
         tvVacio.visibility = if (cargado && lista.isEmpty()) View.VISIBLE else View.GONE
     }
 
-    // ---------- Cambio de estado ----------
-
-    /** Pasa el pedido al siguiente estado (Aceptar, Marcar listo, Entregar) en Firestore. */
+    // pasa el pedido al siguiente estado
     private fun avanzar(pedido: PedidoGestion) {
         if (enCurso) return
         enCurso = true
@@ -169,9 +158,7 @@ class PedidosVendedorActivity : AppCompatActivity() {
         }
     }
 
-    // ---------- Detalle y cancelación ----------
-
-    /** Ventana con todo lo que el vendedor necesita para atender el pedido. */
+    // hoja con todos los datos del pedido y sus botones
     private fun mostrarDetalle(p: PedidoGestion) {
         val dialogo = BottomSheetDialog(this)
         val vista = layoutInflater.inflate(R.layout.dialog_detalle_pedido, null)
@@ -183,7 +170,6 @@ class PedidosVendedorActivity : AppCompatActivity() {
         tvEstado.setTextColor(Color.parseColor(p.colorTextoEstado))
         vista.findViewById<TextView>(R.id.tvDetFecha).text = "Hecho: ${p.fecha}"
 
-        // Cliente y su teléfono (el botón abre el marcador, no llama solo)
         vista.findViewById<TextView>(R.id.tvDetCliente).text = p.cliente
         val tvTelefono = vista.findViewById<TextView>(R.id.tvDetTelefono)
         val btnLlamar = vista.findViewById<View>(R.id.btnDetLlamar)
@@ -197,7 +183,6 @@ class PedidosVendedorActivity : AppCompatActivity() {
             }
         }
 
-        // Entrega a domicilio o recojo en tienda
         vista.findViewById<TextView>(R.id.tvDetEntrega).text = p.textoHorario
         val tvDireccionTitulo = vista.findViewById<TextView>(R.id.tvDetDireccionTitulo)
         val tvDireccion = vista.findViewById<TextView>(R.id.tvDetDireccion)
@@ -209,15 +194,15 @@ class PedidosVendedorActivity : AppCompatActivity() {
             tvDireccion.text = p.direccionTiendaMostrada
         }
 
-        // El mapa solo aparece si el pedido es a domicilio y trae ubicación GPS
+        // el mapa solo sale si es domicilio y se guardo el gps
         val btnMapa = vista.findViewById<View>(R.id.btnDetMapa)
         if (p.tipo == TipoEntrega.ENTREGA && p.tieneUbicacion) {
             btnMapa.setOnClickListener { abrirMapa(p) }
         } else {
             btnMapa.visibility = View.GONE
         }
-        // Productos, domicilio, total y pago
         val densidad = resources.displayMetrics.density
+        // una fila de texto por cada producto
         val contenedor = vista.findViewById<LinearLayout>(R.id.llDetProductos)
         p.productos.forEach { linea ->
             val fila = TextView(this)
@@ -237,7 +222,6 @@ class PedidosVendedorActivity : AppCompatActivity() {
             "Total: ${formatearCop(p.total + p.envio)}"
         vista.findViewById<TextView>(R.id.tvDetPago).text = "Pago: ${p.textoPago}"
 
-        // Acciones: solo las que se pueden hacer con el estado actual
         val btnAccion = vista.findViewById<TextView>(R.id.btnDetAccion)
         val btnCancelar = vista.findViewById<View>(R.id.btnDetCancelar)
         val accion = p.textoAccion
@@ -250,6 +234,7 @@ class PedidosVendedorActivity : AppCompatActivity() {
                 avanzar(p)
             }
         }
+        // oculta cancelar si ya no se puede, y si no hay ninguna accion oculta la barra
         if (!p.sePuedeCancelar) btnCancelar.visibility = View.GONE
         btnCancelar.setOnClickListener {
             dialogo.dismiss()
@@ -264,10 +249,7 @@ class PedidosVendedorActivity : AppCompatActivity() {
         dialogo.behavior.skipCollapsed = true
         dialogo.show()
     }
-    /**
-     * Abre el punto de entrega en una app de mapas. Si el celular no tiene ninguna,
-     * lo abre en el navegador.
-     */
+    // abre la app de mapas, si no hay usa el navegador
     private fun abrirMapa(p: PedidoGestion) {
         val coordenadas = "${p.latitud},${p.longitud}"
         val enApp = Intent(
@@ -289,6 +271,7 @@ class PedidosVendedorActivity : AppCompatActivity() {
             }
         }
     }
+    // pide confirmacion porque devolver el stock no se deshace
     private fun confirmarCancelar(p: PedidoGestion) {
         MaterialAlertDialogBuilder(this)
             .setTitle("¿Cancelar el pedido ${p.codigo}?")
@@ -301,7 +284,7 @@ class PedidosVendedorActivity : AppCompatActivity() {
             .show()
     }
 
-    /** Cancela el pedido en Firestore y devuelve su stock al inventario. */
+    // cancela el pedido y regresa el stock
     private fun cancelar(pedido: PedidoGestion) {
         if (enCurso) return
         enCurso = true

@@ -7,18 +7,20 @@ import java.math.RoundingMode
 import java.net.URLEncoder
 import java.security.MessageDigest
 
-/** Resultado que PayU devuelve al terminar un pago, ya interpretado por la app. */
+// respuesta de payu, verificada es true si firma, referencia y valor coinciden
 data class RespuestaPayu(
-    val estado: String,       // código de PayU: 4 aprobada, 6 rechazada, 5 expirada, 7 pendiente
-    val referencia: String,   // la referencia que la app envió
-    val transaccion: String,  // número de la transacción en PayU
-    val valor: String,        // valor cobrado, tal como lo devolvió PayU
-    val medio: String,        // medio de pago usado (VISA, PSE...)
+    val estado: String,
+    val referencia: String,
+    val transaccion: String,
+    val valor: String,
+    val medio: String,
     val mensaje: String,
-    val verificada: Boolean   // true si la firma, la referencia y el valor corresponden al pago
+    val verificada: Boolean
 ) : Serializable {
+    // el codigo 4 es aprobado
     val aprobada: Boolean get() = estado == "4"
 
+    // nombre del estado para mostrar
     val textoEstado: String
         get() = when (estado) {
             "4" -> "Aprobada"
@@ -30,38 +32,33 @@ data class RespuestaPayu(
         }
 }
 
-/**
- * Configuración y ayudas para el WebCheckout de PayU Latam en ambiente de PRUEBAS.
- *
- * Los datos de abajo son las credenciales de sandbox PÚBLICAS que PayU publica en su
- * guía de pruebas, así que pueden estar en el código. En producción la llave secreta
- * (ApiKey) NUNCA debe ir en la app: la firma y la confirmación se hacen en un servidor.
- */
+// datos de payu en modo pruebas, son las credenciales publicas de sandbox
 object PayuConfig {
-
     const val URL_CHECKOUT = "https://sandbox.checkout.payulatam.com/ppp-web-gateway-payu/"
     const val MERCHANT_ID = "508029"
-    const val ACCOUNT_ID = "512321" // cuenta de Colombia del comercio de pruebas
+    // cuenta de colombia
+    const val ACCOUNT_ID = "512321"
     const val API_KEY = "4Vj8eK4rloUd272L48hsrarnUA"
     const val MONEDA = "COP"
-    const val MODO_PRUEBA = "1" // 1 = pruebas, 0 = producción
+    // 1 pruebas, 0 produccion
+    const val MODO_PRUEBA = "1"
 
-    // Dirección a la que PayU devuelve al comprador. No hace falta que exista: la app
-    // la intercepta dentro del WebView antes de que se cargue.
+    // payu devuelve al comprador aqui, la app la intercepta en el webview
     const val URL_RESPUESTA = "https://sasobakery.app/pago/respuesta"
 
-    /** Referencia única por intento de pago (PayU no permite repetirla). */
+    // referencia nueva por cada pago, payu no deja repetir
     fun nuevaReferencia(): String = "SB${System.currentTimeMillis()}"
 
+    // payu pide md5 en las firmas
     private fun md5(texto: String): String =
         MessageDigest.getInstance("MD5").digest(texto.toByteArray())
             .joinToString("") { "%02x".format(it) }
 
-    /** Firma de la solicitud: ApiKey~merchantId~referencia~monto~moneda, en MD5. */
+    // firma de lo que se envia, para que no cambien el monto
     fun firmaSolicitud(referencia: String, monto: Int): String =
         md5("$API_KEY~$MERCHANT_ID~$referencia~$monto~$MONEDA")
 
-    /** Cuerpo del formulario (POST) que se envía a PayU, ya codificado. */
+    // arma el formulario que se manda por post a payu
     fun cuerpoSolicitud(referencia: String, monto: Int, descripcion: String, correo: String): ByteArray {
         val campos = linkedMapOf(
             "merchantId" to MERCHANT_ID,
@@ -82,11 +79,7 @@ object PayuConfig {
             .toByteArray()
     }
 
-    /**
-     * Interpreta la dirección a la que PayU devolvió al comprador. Valida la firma de la
-     * respuesta (ApiKey~merchantId~referencia~valor redondeado a 1 decimal~moneda~estado) y
-     * que la referencia y el valor sean los del pago que se inició.
-     */
+    // lee la respuesta de payu y revisa firma, referencia, comercio y valor
     fun interpretarRespuesta(uri: Uri, referenciaEsperada: String, montoEsperado: Int): RespuestaPayu {
         fun dato(nombre: String): String = uri.getQueryParameter(nombre).orEmpty()
 
@@ -94,7 +87,7 @@ object PayuConfig {
         val referencia = dato("referenceCode")
         val valor = dato("TX_VALUE")
 
-        // PayU pide redondear el valor a un decimal (mitad al par) antes de calcular la firma
+        // payu firma el valor con un decimal, por eso se redondea
         val valorNumerico = valor.toBigDecimalOrNull()
         val valorFirma = valorNumerico?.setScale(1, RoundingMode.HALF_EVEN)?.toPlainString()
         val firmaCalculada = valorFirma?.let {
@@ -106,7 +99,6 @@ object PayuConfig {
         val valorCorrecto = valorNumerico != null &&
                 valorNumerico.compareTo(BigDecimal(montoEsperado)) == 0
 
-        // El pago debe ser de NUESTRO comercio y en NUESTRA moneda
         val comercioCorrecto = dato("merchantId") == MERCHANT_ID && dato("currency") == MONEDA
 
         return RespuestaPayu(

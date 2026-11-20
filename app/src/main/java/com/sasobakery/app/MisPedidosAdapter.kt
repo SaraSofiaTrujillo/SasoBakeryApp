@@ -9,10 +9,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+// filas de los pedidos del comprador
 class MisPedidosAdapter(
     private val onClick: (PedidoGestion) -> Unit
 ) : RecyclerView.Adapter<MisPedidosAdapter.VH>() {
-
     private var items: List<PedidoGestion> = emptyList()
 
     class VH(vista: View) : RecyclerView.ViewHolder(vista) {
@@ -45,12 +45,13 @@ class MisPedidosAdapter(
         holder.tvFecha.text = "Hecho: ${p.fecha}"
         holder.tvEntrega.text = p.textoHorario
         holder.tvResumen.text = p.resumenProductos
-        holder.tvTotal.text = formatearCop(p.total + p.envio) // pesos colombianos (COP)
+        holder.tvTotal.text = formatearCop(p.total + p.envio)
 
         holder.card.setOnClickListener { onClick(p) }
     }
 
     @SuppressLint("NotifyDataSetChanged")
+    // cambia la lista y la vuelve a pintar
     fun submit(nuevos: List<PedidoGestion>) {
         items = nuevos
         notifyDataSetChanged()

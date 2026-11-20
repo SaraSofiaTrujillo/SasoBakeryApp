@@ -19,7 +19,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- ===== ZONA LILA: volver y título ===== -->
             <LinearLayout
                 android:id="@+id/headerRegistro"
                 android:layout_width="match_parent"
@@ -311,7 +310,7 @@
                     android:textColor="#8A8494"
                     android:textSize="10sp" />
 
-                <!-- Botón principal -->
+                <!-- Boton principal -->
                 <TextView
                     android:id="@+id/btnCrearCuenta"
                     android:layout_width="match_parent"

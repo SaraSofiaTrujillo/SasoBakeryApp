@@ -162,7 +162,8 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="sin cancelar"                        android:textColor="#3F7D5A"
+                        android:text="sin cancelar"
+                        android:textColor="#3F7D5A"
                         android:textSize="10sp" />
                 </LinearLayout>
 
@@ -203,7 +204,8 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="nuevos por atender"                        android:textColor="#B04A63"
+                        android:text="nuevos por atender"
+                        android:textColor="#B04A63"
                         android:textSize="10sp" />
                 </LinearLayout>
             </LinearLayout>

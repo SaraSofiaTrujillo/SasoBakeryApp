@@ -13,14 +13,17 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.firestore.ListenerRegistration
 
+// detalle de un producto, elegir cantidad y agregarlo al carrito
 class ProductoDetalleActivity : AppCompatActivity() {
-
     companion object {
+        // id del producto que se muestra
         const val EXTRA_PRODUCTO_ID = "producto_id"
     }
 
     private var idProducto = ""
+    // unidades que va a agregar, no las que ya tiene en el carrito
     private var cantidad = 1
+    // escucha de firestore, se activa en onStart y se quita en onStop
     private var registro: ListenerRegistration? = null
 
     private lateinit var ivFoto: ImageView
@@ -41,6 +44,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         idProducto = intent.getStringExtra(EXTRA_PRODUCTO_ID).orEmpty()
+        // si el producto no existe o esta oculto se cierra la pantalla
         val producto = InventarioRepositorio.buscarPorId(idProducto)
         if (producto == null || !producto.disponible) {
             Toast.makeText(this, "Este producto ya no está disponible", Toast.LENGTH_SHORT).show()
@@ -85,6 +89,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
             }
         }
 
+        // no deja pasar de lo que queda disponible, stock menos lo que ya esta en el carrito
         btnMas.setOnClickListener {
             val p = InventarioRepositorio.buscarPorId(idProducto) ?: return@setOnClickListener
             val agregables = CarritoRepositorio.unidadesAgregables(p.id)
@@ -101,8 +106,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
         actualizarVista()
     }
 
-    // Mientras se ve el detalle, escucha Firestore: si cambia el stock se actualiza,
-    // y si el vendedor desactiva el producto la pantalla se cierra.
+    // si el producto cambia o se oculta mientras se mira, se actualiza o se cierra
     override fun onStart() {
         super.onStart()
         registro = InventarioRepositorio.escuchar(
@@ -127,6 +131,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
         registro = null
     }
 
+    // pinta todo el detalle con los datos actuales del producto
     private fun actualizarVista() {
         val p = InventarioRepositorio.buscarPorId(idProducto)
         if (p == null) {
@@ -164,6 +169,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
             tvEnCarrito.visibility = View.GONE
         }
 
+        // ajusta la cantidad al maximo que se puede agregar
         val agregables = CarritoRepositorio.unidadesAgregables(p.id)
         cantidad = if (agregables == 0) 0 else cantidad.coerceIn(1, agregables)
         tvCantidad.text = cantidad.toString()
@@ -181,6 +187,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
         }
     }
 
+    // icono de favorito segun si esta marcado
     private fun actualizarCorazon() {
         val esFavorito = FavoritosRepositorio.esFavorito(idProducto)
         ivCorazon.setImageResource(
@@ -191,7 +198,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
         )
     }
 
-
+    // agrega la cantidad elegida y avisa el resultado
     private fun agregarAlCarrito() {
         val p = InventarioRepositorio.buscarPorId(idProducto) ?: return
         val unidades = cantidad.coerceAtLeast(1)
@@ -211,7 +218,7 @@ class ProductoDetalleActivity : AppCompatActivity() {
         }
     }
 
-
+    // texto cuando no queda mas por agregar
     private fun mensajeLimite(p: ProductoInventario): String =
         if (p.stock <= 0) "${p.nombre} está agotado"
         else "Solo hay ${p.textoStock} de ${p.nombre}"

@@ -12,8 +12,8 @@ import androidx.recyclerview.widget.RecyclerView
 import android.widget.Toast
 import com.google.firebase.firestore.ListenerRegistration
 
+// lista de los pedidos del comprador, tocar uno abre su seguimiento
 class MisPedidosCompradorActivity : AppCompatActivity() {
-
     private val adapter = MisPedidosAdapter { pedido -> abrirSeguimiento(pedido) }
 
     private lateinit var tvVacio: View
@@ -38,8 +38,7 @@ class MisPedidosCompradorActivity : AppCompatActivity() {
         rv.adapter = adapter
     }
 
-    // Escucha los pedidos reales del comprador mientras la pantalla se ve: si el vendedor
-    // cambia un estado, aquí se actualiza solo.
+    // pedidos de esta cuenta en tiempo real
     override fun onStart() {
         super.onStart()
         registro = PedidosRepositorio.escucharMios(
@@ -57,6 +56,7 @@ class MisPedidosCompradorActivity : AppCompatActivity() {
         registro = null
     }
 
+    // abre el seguimiento con el id del pedido
     private fun abrirSeguimiento(p: PedidoGestion) {
         val intent = Intent(this, PedidoConfirmadoActivity::class.java)
         intent.putExtra(PedidoConfirmadoActivity.EXTRA_PEDIDO_ID, p.id)

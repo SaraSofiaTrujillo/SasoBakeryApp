@@ -12,18 +12,14 @@ import java.util.Calendar
 import java.util.Locale
 import com.google.firebase.firestore.GeoPoint
 
-/**
- * Pedidos guardados en la colección "pedidos" de Firestore.
- * Por ahora solo sabe crear un pedido; las consultas y el cambio de estado
- * se agregan en las tareas siguientes.
- */
+// todo lo de pedidos en firestore, crear, escuchar, avanzar y cancelar
 object PedidosRepositorio {
-
     private const val COLECCION = "pedidos"
-    private const val PRIMER_NUMERO = 1051 // el primer pedido real es #SB-1051
+    // el primer pedido es el 1051
+    private const val PRIMER_NUMERO = 1051
     private val db get() = FirebaseFirestore.getInstance()
 
-    // Un producto del pedido, tal como está en Firestore en el momento de pagar
+    // producto leido en la transaccion con su precio y stock real
     private class Linea(
         val id: String,
         val nombre: String,
@@ -32,18 +28,13 @@ object PedidosRepositorio {
         val stock: Int
     )
 
-    // Resultado de la transacción: o se creó el pedido, o se rechazó con un motivo
+    // lo que devuelve la transaccion, listo o rechazado
     private sealed class Resultado {
         class Listo(val numero: Int, val lineas: List<Linea>) : Resultado()
         class Rechazado(val mensaje: String) : Resultado()
     }
 
-    /**
-     * Crea el pedido y descuenta el stock en una sola operación: si algo falla,
-     * no se guarda nada. [base] trae los datos de entrega, pago y negocio; el código,
-     * el comprador y los productos se completan aquí con los datos reales de Firestore.
-     * [alTerminar] recibe el pedido creado, o null y el motivo del error.
-     */
+    // crea el pedido en una transaccion, si algo falla no se guarda nada
     fun crear(
         items: List<ItemCarrito>,
         base: PedidoGestion,
@@ -55,7 +46,7 @@ object PedidosRepositorio {
             return
         }
 
-        val refPedido = db.collection(COLECCION).document() // Firestore inventa el id
+        val refPedido = db.collection(COLECCION).document()
         db.runTransaction { tx -> ejecutar(tx, uid, refPedido, items, base) }
             .addOnSuccessListener { resultado ->
                 when (resultado) {
@@ -76,8 +67,7 @@ object PedidosRepositorio {
             .addOnFailureListener { alTerminar(null, mensajeDeError(it)) }
     }
 
-    // Lo que ocurre dentro de la transacción. Regla de Firestore: primero TODAS las
-    // lecturas y después las escrituras.
+    // dentro de la transaccion van primero las lecturas y despues las escrituras
     private fun ejecutar(
         tx: Transaction,
         uid: String,
@@ -87,7 +77,6 @@ object PedidosRepositorio {
     ): Resultado {
         val refContador = db.collection("contadores").document("pedidos")
 
-        // ---- 1) Lecturas ----
         val contador = tx.get(refContador)
         val ultimo = if (contador.exists()) {
             (contador.getLong("ultimo") ?: (PRIMER_NUMERO - 1).toLong()).toInt()
@@ -109,11 +98,12 @@ object PedidosRepositorio {
                     "Ya no hay suficiente stock de $nombre. Revisa tu carrito."
                 )
             }
-            val precio = (doc.getLong("precio") ?: 0L).toInt() // el precio manda el de Firestore
+            // el precio es el de firestore, no el del carrito
+            val precio = (doc.getLong("precio") ?: 0L).toInt()
             lineas.add(Linea(doc.id, nombre, precio, item.cantidad, stock))
         }
 
-        // ---- 2) Escrituras ----
+        // desde aqui son escrituras
         val numero = ultimo + 1
         val subtotal = lineas.sumOf { it.precio * it.cantidad }
 
@@ -123,10 +113,12 @@ object PedidosRepositorio {
             tx.set(refContador, mapOf("ultimo" to numero))
         }
 
+        // descuenta el stock
         lineas.forEachIndexed { i, linea ->
             tx.update(refsProductos[i], "stock", linea.stock - linea.cantidad)
         }
 
+        // guarda el pedido con los datos opcionales al final
         tx.set(
             refPedido,
             mapOf(
@@ -160,13 +152,8 @@ object PedidosRepositorio {
         )
         return Resultado.Listo(numero, lineas)
     }
-    // ---------- Consultas ----------
 
-    /**
-     * Escucha los pedidos del comprador con la sesión iniciada, del más reciente al más
-     * antiguo. [alCambiar] se llama al empezar y cada vez que un pedido cambia.
-     * Hay que cancelar el ListenerRegistration cuando la pantalla deja de verse.
-     */
+    // pedidos del comprador en tiempo real, el mas nuevo primero
     fun escucharMios(
         alCambiar: (List<PedidoGestion>) -> Unit,
         alFallar: (String) -> Unit
@@ -182,7 +169,6 @@ object PedidosRepositorio {
                     alFallar("No se pudieron cargar tus pedidos.")
                     return@addSnapshotListener
                 }
-                // Se ordena aquí (por fecha de creación) para no pedir un índice en Firestore
                 val lista = instantanea.documents
                     .sortedByDescending { creadoEnMilisegundos(it) }
                     .map { aPedido(it) }
@@ -190,10 +176,7 @@ object PedidosRepositorio {
             }
     }
 
-    /**
-     * Escucha un pedido concreto: si el vendedor cambia su estado, [alCambiar] avisa.
-     * Recibe null si el pedido no existe.
-     */
+    // escucha un solo pedido para el seguimiento
     fun escucharPedido(
         id: String,
         alCambiar: (PedidoGestion?) -> Unit,
@@ -207,14 +190,12 @@ object PedidosRepositorio {
             alCambiar(if (doc.exists()) aPedido(doc) else null)
         }
 
-    // ---------- Conversión de documentos ----------
-
-    // Fecha de creación en milisegundos (si el servidor aún no la confirma, se estima)
+    // fecha de creacion, si el servidor aun no la pone queda de primero
     private fun creadoEnMilisegundos(doc: DocumentSnapshot): Long =
         doc.getTimestamp("creado", DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
             ?.toDate()?.time ?: Long.MAX_VALUE
 
-    // Convierte un documento de Firestore en un PedidoGestion
+    // pasa el documento de firestore a PedidoGestion
     private fun aPedido(doc: DocumentSnapshot): PedidoGestion {
         val creado = creadoEnMilisegundos(doc)
         val productos = (doc.get("productos") as? List<*>).orEmpty().mapNotNull { item ->
@@ -260,7 +241,7 @@ object PedidosRepositorio {
         "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"
     )
 
-    // 1763314800000 -> "Hoy, 5:44", "Ayer, 3:10" o "16 nov, 9:02"
+    // pone la fecha como hoy, ayer o dia y mes
     private fun textoFecha(milisegundos: Long): String {
         val fecha = Calendar.getInstance().apply { timeInMillis = milisegundos }
         val hoy = Calendar.getInstance()
@@ -278,8 +259,7 @@ object PedidosRepositorio {
         }
     }
 
-    // Datos opcionales del pedido: teléfono del comprador, ubicación de entrega y datos
-    // del pago. Solo se guardan los que existen.
+    // campos opcionales, solo se guardan los que tienen algo
     private fun datosDeContacto(base: PedidoGestion): Map<String, Any> {
         val datos = mutableMapOf<String, Any>()
         if (base.clienteTelefono.isNotBlank()) datos["clienteTelefono"] = base.clienteTelefono
@@ -293,12 +273,7 @@ object PedidosRepositorio {
         return datos
     }
 
-    // ---------- Gestión del equipo (vendedores y administradores) ----------
-
-    /**
-     * Escucha TODOS los pedidos de la tienda, del más reciente al más antiguo.
-     * Solo funciona con la sesión de un vendedor o administrador activo.
-     */
+    // todos los pedidos, para vendedor y admin
     fun escucharTodos(
         alCambiar: (List<PedidoGestion>) -> Unit,
         alFallar: (String) -> Unit
@@ -315,11 +290,7 @@ object PedidosRepositorio {
             )
         }
 
-    /**
-     * Pasa el pedido al siguiente estado (Nuevo → Preparando → Listo → Entregado).
-     * Antes de guardar vuelve a leer el pedido: si otra persona del equipo ya lo cambió,
-     * no avanza dos veces. [alTerminar] recibe null si salió bien, o el motivo del error.
-     */
+    // pasa al siguiente estado, revisa el estado actual para no saltarse pasos
     fun avanzar(pedido: PedidoGestion, alTerminar: (String?) -> Unit) {
         if (pedido.id.isEmpty()) {
             alTerminar("Este pedido no se puede modificar")
@@ -341,11 +312,7 @@ object PedidosRepositorio {
             .addOnFailureListener { alTerminar(mensajeDeError(it)) }
     }
 
-    /**
-     * Cancela el pedido y devuelve sus productos al inventario (suma el stock que se
-     * descontó al comprar), todo en una sola operación. No se puede cancelar un pedido
-     * entregado ni uno ya cancelado.
-     */
+    // cancela y devuelve el stock, un pedido entregado no se cancela
     fun cancelar(pedido: PedidoGestion, alTerminar: (String?) -> Unit) {
         if (pedido.id.isEmpty()) {
             alTerminar("Este pedido no se puede modificar")
@@ -353,13 +320,13 @@ object PedidosRepositorio {
         }
         val ref = db.collection(COLECCION).document(pedido.id)
         db.runTransaction<String?> { tx ->
-            // ---- Lecturas primero ----
             val doc = tx.get(ref)
             if (!doc.exists()) return@runTransaction "El pedido ya no existe"
             if (doc.getBoolean("cancelado") == true) return@runTransaction "El pedido ya estaba cancelado"
             if (doc.getString("estado") == EstadoPedido.ENTREGADO.name) {
                 return@runTransaction "Un pedido entregado no se puede cancelar"
             }
+            // se leen los productos y despues se les suma lo devuelto
             val devoluciones = (doc.get("productos") as? List<*>).orEmpty().mapNotNull { item ->
                 val linea = item as? Map<*, *> ?: return@mapNotNull null
                 val id = linea["productoId"] as? String ?: return@mapNotNull null
@@ -367,7 +334,6 @@ object PedidosRepositorio {
                 val refProducto = db.collection("productos").document(id)
                 Triple(refProducto, tx.get(refProducto), cantidad)
             }
-            // ---- Escrituras ----
             devoluciones.forEach { (refProducto, producto, cantidad) ->
                 if (producto.exists()) {
                     tx.update(refProducto, "stock", (producto.getLong("stock") ?: 0L) + cantidad)
@@ -380,6 +346,7 @@ object PedidosRepositorio {
             .addOnFailureListener { alTerminar(mensajeDeError(it)) }
     }
 
+    // mensaje segun el error
     private fun mensajeDeError(error: Exception): String =
         if (error is FirebaseFirestoreException &&
             error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED

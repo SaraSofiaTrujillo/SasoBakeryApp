@@ -13,17 +13,10 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-/**
- * Pantalla "Invitar usuario" / "Editar usuario" del administrador.
- * - Sin EXTRA_USUARIO_ID: invita a una persona nueva. Se crea su cuenta real en
- *   Firebase y recibe un correo para elegir su contraseña.
- * - Con EXTRA_USUARIO_ID: edita el nombre y el rol de un usuario existente en Firestore.
- *   El correo no se puede cambiar: es el acceso de la cuenta en Firebase Authentication.
- */
+// formulario del admin, invita un usuario nuevo o edita nombre y rol de uno existente
 class UsuarioFormularioActivity : AppCompatActivity() {
-
     companion object {
-        // Datos que la lista envía para abrir el formulario en modo edición
+        // datos que llegan cuando se edita, sin id es una invitacion
         const val EXTRA_USUARIO_ID = "usuario_id"
         const val EXTRA_NOMBRE = "usuario_nombre"
         const val EXTRA_CORREO = "usuario_correo"
@@ -31,11 +24,13 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         const val EXTRA_ULTIMO_ADMIN = "usuario_ultimo_admin"
     }
 
-    private var rolSeleccionado = Rol.COMPRADOR // el rol con menos permisos va por defecto
-    private var idEditando: String? = null // null = se está invitando a alguien nuevo
-    private var esUltimoAdmin = false // true si no se le puede quitar el rol de administrador
-    private var enCurso = false // evita enviar el formulario dos veces seguidas
-    private var textoBoton = "" // texto original del botón, para restaurarlo
+    private var rolSeleccionado = Rol.COMPRADOR
+    private var idEditando: String? = null
+    // true si es el unico admin activo, no se le puede quitar el rol
+    private var esUltimoAdmin = false
+    private var enCurso = false
+    // texto original del boton para restaurarlo despues de cargar
+    private var textoBoton = ""
 
     private lateinit var etNombre: EditText
     private lateinit var etCorreo: EditText
@@ -47,7 +42,6 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_usuario_formulario)
 
-        // Deja espacio para las barras del sistema y para el teclado
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { vista, insets ->
             val barras = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
@@ -72,7 +66,7 @@ class UsuarioFormularioActivity : AppCompatActivity() {
             }
         }
 
-        // Modo edición: se cargan los datos recibidos y el correo queda bloqueado
+        // al editar el correo no se puede cambiar
         idEditando = intent.getStringExtra(EXTRA_USUARIO_ID)
         if (idEditando != null) {
             findViewById<TextView>(R.id.tvTitulo).text = "Editar usuario"
@@ -89,7 +83,7 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         textoBoton = btnRegistrar.text.toString()
         actualizarChips()
 
-        // El botón "Listo" del teclado también guarda
+        // el boton listo del teclado guarda
         etCorreo.setOnEditorActionListener { _, accion, _ ->
             if (accion == EditorInfo.IME_ACTION_DONE) {
                 guardar()
@@ -103,7 +97,7 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         btnRegistrar.setOnClickListener { guardar() }
     }
 
-    // Mismo estilo de chips que el filtro de la lista de usuarios
+    // resalta el rol elegido
     private fun actualizarChips() {
         chips.forEach { (chip, rol) ->
             if (rol == rolSeleccionado) {
@@ -116,7 +110,7 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         }
     }
 
-    /** Valida los campos y, según el modo, invita a un usuario nuevo o guarda los cambios. */
+    // valida y decide si es edicion o invitacion
     private fun guardar() {
         if (enCurso) return
 
@@ -142,14 +136,10 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         invitarUsuario(nombre, correo)
     }
 
-    /**
-     * Crea la cuenta real en Firebase y avisa cuando termina. La persona invitada
-     * recibe un correo para crear su contraseña; el administrador mantiene su sesión.
-     */
+    // crea la cuenta y envia el correo para que ponga su clave
     private fun invitarUsuario(nombre: String, correo: String) {
         cambiarEstadoCarga(true, "Creando cuenta…")
         AuthRepositorio.crearUsuarioComoAdmin(nombre, correo, rolSeleccionado) { creado, aviso ->
-            // Si la pantalla ya se cerró mientras esperaba, no se hace nada
             if (isFinishing || isDestroyed) return@crearUsuarioComoAdmin
             cambiarEstadoCarga(false)
 
@@ -167,9 +157,8 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         }
     }
 
-    /** Guarda en Firestore el nuevo nombre y rol del usuario que se está editando. */
+    // no deja quitar el rol al ultimo admin
     private fun guardarCambios(id: String, nombre: String) {
-        // No se puede quitar el rol de administrador al último administrador activo
         if (rolSeleccionado != Rol.ADMINISTRADOR && esUltimoAdmin) {
             Toast.makeText(
                 this,
@@ -193,7 +182,7 @@ class UsuarioFormularioActivity : AppCompatActivity() {
         }
     }
 
-    // Mientras Firebase responde, el botón cambia de texto y no se puede pulsar
+    // bloquea el boton mientras guarda
     private fun cambiarEstadoCarga(cargando: Boolean, textoCargando: String = "") {
         enCurso = cargando
         btnRegistrar.isEnabled = !cargando

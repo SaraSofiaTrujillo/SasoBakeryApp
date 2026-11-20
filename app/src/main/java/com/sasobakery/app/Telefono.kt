@@ -1,22 +1,15 @@
 package com.sasobakery.app
 
-/**
- * Ayudas para teléfonos personales. Se guardan "limpios" (solo dígitos y un + opcional
- * al inicio) y se muestran con espacios.
- */
+// ayudas para validar y mostrar telefonos
 object Telefono {
-
-    /**
-     * Limpia lo que escribió la persona ("+57 300 123-4567" -> "+573001234567").
-     * Devuelve null si no es un teléfono válido (de 10 a 13 dígitos).
-     */
+    // deja solo digitos, acepta de 10 a 13 y conserva el mas, null si no es valido
     fun normalizar(texto: String): String? {
         val digitos = texto.filter { it.isDigit() }
         if (digitos.length !in 10..13) return null
         return if (texto.trim().startsWith("+")) "+$digitos" else digitos
     }
 
-    /** "3001234567" -> "300 123 4567"; "+573001234567" -> "+57 300 123 4567". */
+    // pone espacios para leerlo mejor, 3 3 4
     fun mostrar(valor: String): String {
         val digitos = valor.filter { it.isDigit() }
         return when {

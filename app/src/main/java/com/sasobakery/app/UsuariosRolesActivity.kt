@@ -18,18 +18,15 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.firestore.ListenerRegistration
 
-/**
- * Lista de usuarios del administrador. Los datos vienen de la colección "usuarios"
- * de Firestore y se actualizan solos cuando alguien crea, edita o elimina un usuario.
- * Desde aquí se abre el formulario (invitar / editar) y se activa, desactiva o elimina.
- */
+// lista de usuarios para el admin, con busqueda, filtro por rol y menu de acciones
 class UsuariosRolesActivity : AppCompatActivity() {
-
     private val adapter = UsuariosAdapter { usuario, vista -> mostrarMenu(usuario, vista) }
 
-    private var todos: List<Usuario> = emptyList() // lista completa tal como viene de Firestore
-    private var rolFiltro: Rol? = null // null = mostrar todos los roles
-    private var registro: ListenerRegistration? = null // la "escucha" de Firestore
+    private var todos: List<Usuario> = emptyList()
+    // rol elegido en los chips, null es todos
+    private var rolFiltro: Rol? = null
+    // escucha de firestore, se activa en onStart y se quita en onStop
+    private var registro: ListenerRegistration? = null
 
     private lateinit var etBuscar: EditText
     private lateinit var chips: List<Pair<TextView, Rol?>>
@@ -50,6 +47,7 @@ class UsuariosRolesActivity : AppCompatActivity() {
         rv.adapter = adapter
 
         etBuscar = findViewById(R.id.etBuscar)
+        // filtra mientras se escribe
         etBuscar.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -71,7 +69,7 @@ class UsuariosRolesActivity : AppCompatActivity() {
             }
         }
 
-        // El botón de filtro limpia el buscador y vuelve a mostrar todos los roles
+        // limpia busqueda y filtro
         findViewById<View>(R.id.btnFiltro).setOnClickListener {
             etBuscar.setText("")
             rolFiltro = null
@@ -82,7 +80,6 @@ class UsuariosRolesActivity : AppCompatActivity() {
             startActivity(Intent(this, UsuarioFormularioActivity::class.java))
         }
 
-        // Menú inferior
         findViewById<View>(R.id.navResumen).setOnClickListener { finish() }
         findViewById<View>(R.id.navPedidos).setOnClickListener {
             startActivity(Intent(this, PedidosActivity::class.java))
@@ -93,10 +90,10 @@ class UsuariosRolesActivity : AppCompatActivity() {
             finish()
         }
 
-        aplicarFiltros() // dibuja los chips desde el inicio
+        aplicarFiltros()
     }
 
-    // Empieza a escuchar Firestore cuando la pantalla se ve...
+    // usuarios en tiempo real
     override fun onStart() {
         super.onStart()
         registro = UsuariosRepositorio.escuchar(
@@ -111,14 +108,13 @@ class UsuariosRolesActivity : AppCompatActivity() {
         )
     }
 
-    // ...y deja de escuchar cuando ya no se ve, para no gastar datos ni batería
     override fun onStop() {
         super.onStop()
         registro?.remove()
         registro = null
     }
 
-    /** Muestra solo los usuarios que cumplen el rol elegido y el texto del buscador. */
+    // combina el rol y el texto, busca por nombre o correo
     private fun aplicarFiltros() {
         val texto = etBuscar.text.toString().trim().lowercase()
         val visibles = todos.filter { u ->
@@ -131,7 +127,7 @@ class UsuariosRolesActivity : AppCompatActivity() {
         actualizarChips()
     }
 
-    // Mismo estilo de chips que el formulario
+    // resalta el chip elegido
     private fun actualizarChips() {
         chips.forEach { (chip, rol) ->
             if (rol == rolFiltro) {
@@ -144,7 +140,7 @@ class UsuariosRolesActivity : AppCompatActivity() {
         }
     }
 
-    // Los tres números de la tarjeta: total, compradores y equipo (vendedores + admins)
+    // contadores de arriba, equipo es todo el que no es comprador
     private fun actualizarEstadisticas() {
         findViewById<TextView>(R.id.tvStatTotal).text = todos.size.toString()
         findViewById<TextView>(R.id.tvStatCompradores).text =
@@ -153,8 +149,7 @@ class UsuariosRolesActivity : AppCompatActivity() {
             todos.count { it.rol != Rol.COMPRADOR }.toString()
     }
 
-    // ---------- Menú de los tres puntitos de cada usuario ----------
-
+    // menu de los tres puntos de cada usuario
     private fun mostrarMenu(usuario: Usuario, vista: View) {
         val menu = PopupMenu(this, vista)
         menu.menu.add(0, 1, 0, "Editar")
@@ -171,6 +166,7 @@ class UsuariosRolesActivity : AppCompatActivity() {
         menu.show()
     }
 
+    // abre el formulario con los datos del usuario
     private fun editar(usuario: Usuario) {
         val intent = Intent(this, UsuarioFormularioActivity::class.java)
         intent.putExtra(UsuarioFormularioActivity.EXTRA_USUARIO_ID, usuario.id)
@@ -184,10 +180,7 @@ class UsuariosRolesActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    /**
-     * Revisa que sea seguro desactivar o eliminar a este usuario. Devuelve el motivo
-     * si NO se puede, o null si está permitido.
-     */
+    // razon por la que no se puede desactivar o eliminar, null si si se puede
     private fun motivoDeBloqueo(usuario: Usuario): String? = when {
         usuario.id == AuthRepositorio.uidActual() ->
             "No puedes hacerlo con tu propia cuenta."
@@ -196,8 +189,8 @@ class UsuariosRolesActivity : AppCompatActivity() {
         else -> null
     }
 
+    // activar siempre se puede, desactivar pasa por las reglas de bloqueo
     private fun confirmarCambioActivo(usuario: Usuario) {
-        // Activar siempre se puede; desactivar tiene restricciones
         if (usuario.activo) {
             val motivo = motivoDeBloqueo(usuario)
             if (motivo != null) {
@@ -222,12 +215,12 @@ class UsuariosRolesActivity : AppCompatActivity() {
                     if (error != null) {
                         Toast.makeText(this, error, Toast.LENGTH_LONG).show()
                     }
-                    // Si salió bien, la lista se actualiza sola gracias a la escucha
                 }
             }
             .show()
     }
 
+    // pide confirmacion antes de borrar el perfil
     private fun confirmarEliminar(usuario: Usuario) {
         val motivo = motivoDeBloqueo(usuario)
         if (motivo != null) {

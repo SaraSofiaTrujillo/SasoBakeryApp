@@ -12,13 +12,9 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 
-/**
- * Ventana con el detalle completo de un pedido para el equipo (administrador). Muestra
- * cliente, teléfono, entrega, productos, pago y las acciones posibles según el estado.
- * Quien la usa decide qué hacer al avanzar o cancelar, mediante los dos parámetros.
- */
+// hoja con el detalle de un pedido, la usa la pantalla del admin
 object DetallePedidoDialogo {
-
+    // arma la hoja, avanzar y cancelar los resuelve la pantalla que la llama
     fun mostrar(
         actividad: AppCompatActivity,
         p: PedidoGestion,
@@ -35,7 +31,6 @@ object DetallePedidoDialogo {
         tvEstado.setTextColor(Color.parseColor(p.colorTextoEstado))
         vista.findViewById<TextView>(R.id.tvDetFecha).text = "Hecho: ${p.fecha}"
 
-        // Cliente y su teléfono (el botón abre el marcador, no llama solo)
         vista.findViewById<TextView>(R.id.tvDetCliente).text = p.cliente
         val tvTelefono = vista.findViewById<TextView>(R.id.tvDetTelefono)
         val btnLlamar = vista.findViewById<View>(R.id.btnDetLlamar)
@@ -51,11 +46,11 @@ object DetallePedidoDialogo {
             }
         }
 
-        // Entrega a domicilio (con mapa si el comprador compartió su ubicación) o recojo
         vista.findViewById<TextView>(R.id.tvDetEntrega).text = p.textoHorario
         val tvDireccionTitulo = vista.findViewById<TextView>(R.id.tvDetDireccionTitulo)
         val tvDireccion = vista.findViewById<TextView>(R.id.tvDetDireccion)
         val btnMapa = vista.findViewById<View>(R.id.btnDetMapa)
+        // domicilio muestra la direccion del cliente, recoger la de la tienda
         if (p.tipo == TipoEntrega.ENTREGA) {
             tvDireccionTitulo.text = "Dirección de entrega"
             tvDireccion.text = p.direccion.ifBlank { "Sin dirección" }
@@ -63,6 +58,7 @@ object DetallePedidoDialogo {
             tvDireccionTitulo.text = "Recoge en tienda"
             tvDireccion.text = p.direccionTiendaMostrada
         }
+        // el boton de mapa solo sale si se guardo el gps
         if (p.tipo == TipoEntrega.ENTREGA && p.tieneUbicacion) {
             btnMapa.visibility = View.VISIBLE
             btnMapa.setOnClickListener { abrirMapa(actividad, p) }
@@ -70,8 +66,8 @@ object DetallePedidoDialogo {
             btnMapa.visibility = View.GONE
         }
 
-        // Productos, domicilio, total y forma de pago
         val densidad = actividad.resources.displayMetrics.density
+        // una fila de texto por cada producto
         val contenedor = vista.findViewById<LinearLayout>(R.id.llDetProductos)
         p.productos.forEach { linea ->
             val fila = TextView(actividad)
@@ -91,7 +87,6 @@ object DetallePedidoDialogo {
             "Total: ${formatearCop(p.total + p.envio)}"
         vista.findViewById<TextView>(R.id.tvDetPago).text = "Pago: ${p.textoPago}"
 
-        // Acciones: solo las que se pueden hacer con el estado actual
         val btnAccion = vista.findViewById<TextView>(R.id.btnDetAccion)
         val btnCancelar = vista.findViewById<View>(R.id.btnDetCancelar)
         val accion = p.textoAccion
@@ -104,6 +99,7 @@ object DetallePedidoDialogo {
                 alAvanzar(p)
             }
         }
+        // oculta cancelar si ya no se puede, y si no hay ninguna accion oculta la barra
         if (!p.sePuedeCancelar) btnCancelar.visibility = View.GONE
         btnCancelar.setOnClickListener {
             dialogo.dismiss()
@@ -119,7 +115,7 @@ object DetallePedidoDialogo {
         dialogo.show()
     }
 
-    /** Abre la ubicación de entrega en Google Maps; si no hay app de mapas, en el navegador. */
+    // abre la app de mapas, si no hay usa el navegador
     private fun abrirMapa(actividad: AppCompatActivity, p: PedidoGestion) {
         val latitud = p.latitud ?: return
         val longitud = p.longitud ?: return

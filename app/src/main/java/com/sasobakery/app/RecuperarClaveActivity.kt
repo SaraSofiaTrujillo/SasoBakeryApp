@@ -17,25 +17,22 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 
-/**
- * Recuperación de contraseña en 2 pasos dentro de la misma pantalla:
- * 1) el usuario escribe su correo  2) "Revisa tu correo".
- * Firebase envía un enlace al correo; ahí el usuario crea su nueva contraseña
- * en una página segura y vuelve a iniciar sesión.
- */
+// recuperar la clave, firebase envia un enlace al correo
 class RecuperarClaveActivity : AppCompatActivity() {
-
     companion object {
-        // El login envía el correo que ya escribió el usuario
+        // correo que viene escrito desde el login
         const val EXTRA_CORREO = "correo"
+        // espera antes de poder pedir otro enlace
         private const val SEGUNDOS_PARA_REENVIAR = 30
     }
 
+    // dos pasos, escribir el correo y aviso de enviado
     private enum class Paso { CORREO, ENVIADO }
 
     private var paso = Paso.CORREO
-    private var correo = "" // correo al que se envió el enlace
-    private var enCurso = false // evita pedir dos envíos a la vez
+    private var correo = ""
+    private var enCurso = false
+    // cuenta regresiva del reenvio
     private var temporizador: CountDownTimer? = null
 
     private lateinit var btnAtras: View
@@ -50,8 +47,7 @@ class RecuperarClaveActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_recuperar_clave)
 
-        // Misma lógica de márgenes del login: lila hasta arriba, panel blanco hasta
-        // abajo, y el teclado empuja el contenido para no tapar los campos.
+        // ajusta los margenes para barras del sistema y teclado
         val cabecera = findViewById<View>(R.id.headerRecuperar)
         val panel = findViewById<View>(R.id.panelRecuperar)
         val baseArriba = cabecera.paddingTop
@@ -75,20 +71,18 @@ class RecuperarClaveActivity : AppCompatActivity() {
         tvCorreoEnviado = findViewById(R.id.tvCorreoEnviado)
         tvReenviar = findViewById(R.id.tvReenviar)
 
-        // El paso 2 ya no pide código: se ocultan esos elementos
+        // el layout trae campos de codigo que ya no se usan, se ocultan
         findViewById<View>(R.id.tvEtiquetaCodigo).visibility = View.GONE
         findViewById<View>(R.id.etCodigo).visibility = View.GONE
         findViewById<View>(R.id.tvNotaPrueba).visibility = View.GONE
 
-        // El botón grande del paso 2 pasa a ser "Volver a iniciar sesión"
         val btnVolverDesdeEnviado = findViewById<TextView>(R.id.btnVerificarCodigo)
         btnVolverDesdeEnviado.text = "Volver a iniciar sesión"
         btnVolverDesdeEnviado.setOnClickListener { finish() }
 
-        // Si el usuario ya había escrito su correo en el login, se reutiliza
+        // si viene un correo del login se deja escrito
         etCorreo.setText(intent.getStringExtra(EXTRA_CORREO).orEmpty())
 
-        // ----- Paso 1: correo -----
         btnEnviar.setOnClickListener { enviarEnlace(esReenvio = false) }
         etCorreo.setOnEditorActionListener { _, accion, _ ->
             if (accion == EditorInfo.IME_ACTION_DONE) {
@@ -100,14 +94,13 @@ class RecuperarClaveActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.btnVolverLogin).setOnClickListener { finish() }
 
-        // ----- Paso 2: revisa tu correo -----
         tvReenviar.setOnClickListener {
             if (tvReenviar.isEnabled) enviarEnlace(esReenvio = true)
         }
         findViewById<View>(R.id.btnCambiarCorreo).setOnClickListener { mostrarPaso(Paso.CORREO) }
 
-        // Volver (flecha de la pantalla y botón Atrás del celular)
         btnAtras.setOnClickListener { atras() }
+        // atras en el segundo paso vuelve al primero
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = atras()
         })
@@ -115,8 +108,7 @@ class RecuperarClaveActivity : AppCompatActivity() {
         mostrarPaso(Paso.CORREO)
     }
 
-    // ---------- Pasos ----------
-
+    // muestra solo el paso actual
     private fun mostrarPaso(nuevo: Paso) {
         paso = nuevo
         pasos.forEach { (clave, vista) ->
@@ -126,17 +118,12 @@ class RecuperarClaveActivity : AppCompatActivity() {
         ocultarTeclado()
     }
 
-    // Del paso 2 se vuelve al correo; del paso 1 se sale a la pantalla anterior
+    // del paso enviado vuelve al correo, del primero cierra
     private fun atras() {
         if (paso == Paso.ENVIADO) mostrarPaso(Paso.CORREO) else finish()
     }
 
-    // ---------- Enviar el enlace ----------
-
-    /**
-     * Pide a Firebase que envíe el enlace de recuperación. Si es un reenvío se usa el
-     * correo ya validado; si no, se valida primero lo que escribió el usuario.
-     */
+    // valida el correo y pide el envio, el reenvio usa el correo ya guardado
     private fun enviarEnlace(esReenvio: Boolean) {
         if (enCurso) return
 
@@ -156,7 +143,6 @@ class RecuperarClaveActivity : AppCompatActivity() {
 
         cambiarEstadoCarga(true)
         AuthRepositorio.enviarCorreoRecuperacion(destino) { error ->
-            // Si la pantalla ya se cerró mientras esperaba, no se hace nada
             if (isFinishing || isDestroyed) return@enviarCorreoRecuperacion
             cambiarEstadoCarga(false)
 
@@ -169,7 +155,7 @@ class RecuperarClaveActivity : AppCompatActivity() {
             if (esReenvio) {
                 mensaje("Te enviamos un nuevo enlace")
             } else {
-                // Mensaje neutro: no dice si el correo existe o no (así se protege a los usuarios)
+                // el mensaje no confirma si la cuenta existe
                 tvCorreoEnviado.text =
                     "Si ${enmascararCorreo(correo)} tiene una cuenta, le enviamos un enlace para " +
                             "crear una nueva contraseña. Revisa también la carpeta de spam."
@@ -179,14 +165,14 @@ class RecuperarClaveActivity : AppCompatActivity() {
         }
     }
 
-    // Mientras Firebase responde, el botón cambia de texto y no se puede pulsar
+    // bloquea el boton mientras envia
     private fun cambiarEstadoCarga(cargando: Boolean) {
         enCurso = cargando
         btnEnviar.isEnabled = !cargando
         btnEnviar.text = if (cargando) "Enviando…" else "Enviar enlace"
     }
 
-    // "Reenviar" se activa después de unos segundos para evitar envíos seguidos
+    // desactiva el reenvio hasta que termine la cuenta regresiva
     private fun iniciarConteoReenvio() {
         temporizador?.cancel()
         tvReenviar.isEnabled = false
@@ -204,8 +190,7 @@ class RecuperarClaveActivity : AppCompatActivity() {
         }.start()
     }
 
-    // ---------- Utilidades ----------
-
+    // esconde el teclado al cambiar de paso
     private fun ocultarTeclado() {
         WindowCompat.getInsetsController(window, window.decorView)
             .hide(WindowInsetsCompat.Type.ime())
@@ -215,6 +200,7 @@ class RecuperarClaveActivity : AppCompatActivity() {
         Toast.makeText(this, texto, Toast.LENGTH_SHORT).show()
     }
 
+    // cancela el temporizador
     override fun onDestroy() {
         temporizador?.cancel()
         super.onDestroy()

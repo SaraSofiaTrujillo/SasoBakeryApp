@@ -8,12 +8,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+// lista del carrito, en modo edicion muestra el boton de quitar
 class CarritoAdapter(
     private val onMas: (ProductoInventario) -> Unit,
     private val onMenos: (ProductoInventario) -> Unit,
     private val onQuitar: (ProductoInventario) -> Unit
 ) : RecyclerView.Adapter<CarritoAdapter.VH>() {
-
     private var items: List<ItemCarrito> = emptyList()
     private var modoEdicion = false
 
@@ -60,6 +60,7 @@ class CarritoAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
+    // cambia la lista y el modo edicion
     fun submit(nuevos: List<ItemCarrito>, edicion: Boolean) {
         items = nuevos
         modoEdicion = edicion

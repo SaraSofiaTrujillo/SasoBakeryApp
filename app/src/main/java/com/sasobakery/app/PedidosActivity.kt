@@ -14,22 +14,20 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.firestore.ListenerRegistration
 
+// filtros de la lista de pedidos del admin
 enum class FiltroPedidos(val nombre: String) {
     TODOS("Todos"),
     EN_CURSO("En curso"),
     COMPLETADOS("Completados")
 }
 
-/**
- * Control general de pedidos del administrador. Lee los pedidos reales de Firestore en
- * tiempo real, muestra los totales y permite abrir el detalle, avanzar el estado o
- * cancelar (devolviendo el stock al inventario).
- */
+// pedidos del admin con resumen, filtros y detalle
 class PedidosActivity : AppCompatActivity() {
-
-    private var pedidos: List<PedidoGestion> = emptyList() // pedidos reales de Firestore
-    private var cargado = false  // ya llegó la primera lectura
-    private var enCurso = false  // evita dos cambios seguidos por un doble toque
+    private var pedidos: List<PedidoGestion> = emptyList()
+    private var cargado = false
+    // evita doble toque mientras se actualiza un pedido
+    private var enCurso = false
+    // escucha de firestore, se activa en onStart y se quita en onStop
     private var registro: ListenerRegistration? = null
 
     private val adapter = PedidosAdapter { pedido -> abrirDetalle(pedido.codigo) }
@@ -75,7 +73,6 @@ class PedidosActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnNotificaciones).setOnClickListener { proximamente() }
 
-        // Menú inferior
         findViewById<View>(R.id.navResumen).setOnClickListener { finish() }
         findViewById<View>(R.id.navProductos).setOnClickListener {
             startActivity(Intent(this, ProductosCategoriasActivity::class.java))
@@ -89,8 +86,7 @@ class PedidosActivity : AppCompatActivity() {
         refrescar()
     }
 
-    // Mientras la pantalla se ve, escucha los pedidos reales: un pedido nuevo aparece solo
-    // y los cambios de estado hechos por el vendedor se reflejan al instante.
+    // pedidos en tiempo real
     override fun onStart() {
         super.onStart()
         registro = PedidosRepositorio.escucharTodos(
@@ -109,8 +105,7 @@ class PedidosActivity : AppCompatActivity() {
         registro = null
     }
 
-    // ---------- Regla única: se usa para CONTAR y para FILTRAR ----------
-
+    // si el pedido entra en el filtro
     private fun coincide(p: PedidoGestion, filtro: FiltroPedidos): Boolean = when (filtro) {
         FiltroPedidos.TODOS -> true
         FiltroPedidos.EN_CURSO -> !p.cancelado && p.estado != EstadoPedido.ENTREGADO
@@ -119,9 +114,7 @@ class PedidosActivity : AppCompatActivity() {
 
     private fun contar(filtro: FiltroPedidos): Int = pedidos.count { coincide(it, filtro) }
 
-    // ---------- Pantalla ----------
-
-    /** Recalcula los totales de arriba, los chips y la lista visible. */
+    // las ventas y pendientes no cuentan los cancelados
     private fun refrescar() {
         val validos = pedidos.filter { !it.cancelado }
         tvTotalPedidos.text = pedidos.size.toString()
@@ -141,11 +134,10 @@ class PedidosActivity : AppCompatActivity() {
 
         val lista = pedidos.filter { coincide(it, filtroActual) }
         adapter.submit(lista.map { aTarjeta(it) })
-        // El mensaje de "vacío" solo sale cuando ya llegó la primera lectura
         tvVacio.visibility = if (cargado && lista.isEmpty()) View.VISIBLE else View.GONE
     }
 
-    /** Convierte un pedido real en la tarjeta que muestra esta lista. */
+    // pasa el pedido a lo que muestra la tarjeta
     private fun aTarjeta(p: PedidoGestion) = Pedido(
         codigo = p.codigo,
         cliente = p.cliente,
@@ -157,8 +149,7 @@ class PedidosActivity : AppCompatActivity() {
         cancelado = p.cancelado
     )
 
-    // ---------- Detalle, cambio de estado y cancelación ----------
-
+    // detalle compartido con el vendedor
     private fun abrirDetalle(codigo: String) {
         val pedido = pedidos.firstOrNull { it.codigo == codigo } ?: return
         DetallePedidoDialogo.mostrar(
@@ -168,7 +159,7 @@ class PedidosActivity : AppCompatActivity() {
         )
     }
 
-    /** Pasa el pedido al siguiente estado en Firestore. */
+    // pasa el pedido al siguiente estado
     private fun avanzar(pedido: PedidoGestion) {
         if (enCurso) return
         enCurso = true
@@ -181,6 +172,7 @@ class PedidosActivity : AppCompatActivity() {
         }
     }
 
+    // pide confirmacion porque devolver el stock no se deshace
     private fun confirmarCancelar(p: PedidoGestion) {
         MaterialAlertDialogBuilder(this)
             .setTitle("¿Cancelar el pedido ${p.codigo}?")
@@ -193,7 +185,7 @@ class PedidosActivity : AppCompatActivity() {
             .show()
     }
 
-    /** Cancela el pedido en Firestore y devuelve su stock al inventario. */
+    // cancela el pedido y regresa el stock
     private fun cancelar(pedido: PedidoGestion) {
         if (enCurso) return
         enCurso = true

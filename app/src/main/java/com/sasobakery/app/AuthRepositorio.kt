@@ -14,75 +14,53 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 
-/**
- * Resultado de una operación de autenticación: o salió bien y trae el rol del
- * usuario, o salió mal y trae un mensaje listo para mostrar en pantalla.
- * [credencialesInvalidas] es true cuando falló porque el correo o la contraseña
- * ya no son válidos (la huella usa esto para desactivarse sola).
- */
+// resultado de login y registro, trae el rol o el mensaje de error
 sealed class ResultadoAuth {
     data class Exito(val rol: Rol) : ResultadoAuth()
+    // credencialesInvalidas sirve para que la huella se apague sola
     data class Error(
         val mensaje: String,
         val credencialesInvalidas: Boolean = false
     ) : ResultadoAuth()
 }
 
-/**
- * Único punto de la app que habla con Firebase Authentication y con la
- * colección "usuarios" de Firestore. Las pantallas solo llaman a estas funciones.
- *
- * Cada cuenta tiene dos partes:
- *  - Authentication: correo y contraseña (Firebase las guarda cifradas).
- *  - Firestore usuarios/{uid}: nombre, correo, rol y si la cuenta está activa.
- */
+// maneja login y registro con firebase, el perfil con el rol queda en firestore
 object AuthRepositorio {
-
-    const val LARGO_MINIMO_CLAVE = 6 // mínimo que exige Firebase
+    // minimo que pide firebase
+    const val LARGO_MINIMO_CLAVE = 6
     private const val COLECCION_USUARIOS = "usuarios"
+    // nombre de la segunda app de firebase para invitar usuarios
     private const val NOMBRE_APP_SECUNDARIA = "creacion_usuarios"
     private val auth get() = FirebaseAuth.getInstance()
     private val db get() = FirebaseFirestore.getInstance()
 
-
-    // Rol de la sesión actual, guardado en memoria para que la guardia de acceso lo
-    // consulte sin ir a Firestore cada vez. Se borra al cerrar sesión.
+    // rol guardado en memoria para no consultar firestore a cada rato
     private var rolActual: Rol? = null
 
-    /** Rol de la sesión actual si ya se conoce (null si la app se reinició). */
     fun rolEnCache(): Rol? = rolActual
 
-    /** true si ya hay una sesión guardada en este celular. */
     fun haySesion(): Boolean = auth.currentUser != null
 
-    /** Correo de la cuenta con la sesión iniciada (null si no hay sesión). */
     fun correoActual(): String? = auth.currentUser?.email
 
-    /** ID (uid) de la cuenta con la sesión iniciada; sirve para no actuar sobre uno mismo. */
     fun uidActual(): String? = auth.currentUser?.uid
 
-    /** Pantalla principal que le corresponde a cada rol. */
+    // pantalla principal segun el rol
     fun destinoPara(rol: Rol): Class<*> = when (rol) {
         Rol.ADMINISTRADOR -> MainActivity::class.java
         Rol.VENDEDOR -> VendedorPrincipalActivity::class.java
         Rol.COMPRADOR -> CatalogoCompradorActivity::class.java
     }
 
-    // ---------- Registro ----------
-
-    /**
-     * Crea la cuenta en Authentication y su perfil en Firestore.
-     * Al terminar bien, el usuario queda con la sesión iniciada.
-     */
+    // crea la cuenta y despues el perfil, el admin no se puede crear desde aqui
     fun registrar(
         nombre: String,
         correo: String,
         clave: String,
         rol: Rol,
-        telefono: String, // teléfono personal ya normalizado (solo dígitos y + opcional)
+        telefono: String,
         alTerminar: (ResultadoAuth) -> Unit
     ) {
-        // Seguridad: el registro público nunca crea administradores
         if (rol == Rol.ADMINISTRADOR) {
             alTerminar(ResultadoAuth.Error("El registro no permite crear administradores"))
             return
@@ -103,14 +81,14 @@ object AuthRepositorio {
                     "activo" to true,
                     "creado" to FieldValue.serverTimestamp()
                 )
-                perfil["telefono"] = telefono // el teléfono personal viaja en el mismo documento
+                perfil["telefono"] = telefono
                 db.collection(COLECCION_USUARIOS).document(usuario.uid).set(perfil)
                     .addOnSuccessListener {
                         rolActual = rol
                         alTerminar(ResultadoAuth.Exito(rol))
                     }
                     .addOnFailureListener { error ->
-                        // Una cuenta sin perfil no sirve: se borra para poder intentar otra vez
+                        // si falla el perfil se borra la cuenta para que no quede a medias
                         usuario.delete()
                         alTerminar(ResultadoAuth.Error(traducirError(error)))
                     }
@@ -118,9 +96,7 @@ object AuthRepositorio {
             .addOnFailureListener { alTerminar(ResultadoAuth.Error(traducirError(it))) }
     }
 
-    // ---------- Inicio y cierre de sesión ----------
-
-    /** Inicia sesión con correo y contraseña y devuelve el rol de la cuenta. */
+    // inicia sesion y luego busca el rol en firestore
     fun iniciarSesion(correo: String, clave: String, alTerminar: (ResultadoAuth) -> Unit) {
         auth.signInWithEmailAndPassword(correo, clave)
             .addOnSuccessListener { leerRolDeSesion(alTerminar) }
@@ -129,7 +105,7 @@ object AuthRepositorio {
             }
     }
 
-    /** Con una sesión ya guardada (la app se abrió de nuevo), consulta el rol vigente. */
+    // para cuando la app abre con sesion guardada, revisa rol y que siga activa
     fun rolDeSesionActual(alTerminar: (ResultadoAuth) -> Unit) {
         if (auth.currentUser == null) {
             alTerminar(ResultadoAuth.Error("No hay sesión iniciada"))
@@ -138,23 +114,13 @@ object AuthRepositorio {
         leerRolDeSesion(alTerminar)
     }
 
-    /** Cierra la sesión en este celular. */
+    // cierra sesion y limpia el carrito de la memoria
     fun cerrarSesion() {
-        CarritoRepositorio.limpiarMemoria() // el carrito de esta cuenta no se le muestra a la siguiente
+        CarritoRepositorio.limpiarMemoria()
         auth.signOut()
     }
-    // ---------- Invitar usuarios (solo administrador) ----------
 
-    /**
-     * Crea la cuenta de otra persona (botón "Invitar usuario") sin cerrar la sesión del
-     * administrador. La cuenta nace con una contraseña temporal aleatoria que nadie
-     * conoce; la persona recibe un correo para crear la suya.
-     *
-     * [alTerminar] recibe dos datos:
-     *  - creado: true si la cuenta quedó creada.
-     *  - mensaje: si creado es false, el error; si creado es true, un aviso opcional
-     *    (por ejemplo, que la cuenta se creó pero el correo no se pudo enviar).
-     */
+    // el admin invita usuarios, usa una segunda app de firebase para no perder su sesion
     fun crearUsuarioComoAdmin(
         nombre: String,
         correo: String,
@@ -166,9 +132,6 @@ object AuthRepositorio {
             return
         }
 
-        // Crear la cuenta con la conexión principal cerraría la sesión del administrador
-        // (Firebase inicia sesión con la cuenta recién creada). Por eso se usa una
-        // conexión secundaria, que se desconecta apenas termina.
         val authSecundaria = authSecundaria()
 
         authSecundaria.createUserWithEmailAndPassword(correo, generarClaveTemporal())
@@ -187,14 +150,12 @@ object AuthRepositorio {
                     "activo" to true,
                     "creado" to FieldValue.serverTimestamp()
                 )
-                // El perfil se guarda con la conexión principal: la del administrador
                 db.collection(COLECCION_USUARIOS).document(nuevo.uid).set(perfil)
                     .addOnSuccessListener {
                         authSecundaria.signOut()
                         enviarEnlaceDeInvitacion(correo, alTerminar)
                     }
                     .addOnFailureListener { error ->
-                        // Una cuenta sin perfil no sirve: se borra antes de desconectar la secundaria
                         nuevo.delete().addOnCompleteListener {
                             authSecundaria.signOut()
                             alTerminar(false, traducirError(error))
@@ -204,7 +165,7 @@ object AuthRepositorio {
             .addOnFailureListener { alTerminar(false, traducirError(it)) }
     }
 
-    /** Envía el correo con el enlace para que la persona invitada cree su contraseña. */
+    // manda el correo para que la persona cree su clave
     private fun enviarEnlaceDeInvitacion(
         correo: String,
         alTerminar: (creado: Boolean, mensaje: String?) -> Unit
@@ -221,7 +182,7 @@ object AuthRepositorio {
             }
     }
 
-    /** Conexión secundaria a Firebase, creada solo la primera vez que se necesita. */
+    // devuelve el auth de la segunda app, la crea si no existe
     private fun authSecundaria(): FirebaseAuth {
         val appPrincipal = FirebaseApp.getInstance()
         val appSecundaria = try {
@@ -236,23 +197,16 @@ object AuthRepositorio {
         return FirebaseAuth.getInstance(appSecundaria)
     }
 
-    /** Contraseña aleatoria de 24 caracteres que nadie llega a ver ni a usar. */
+    // clave al azar de 24 caracteres, nadie la conoce
     private fun generarClaveTemporal(): String {
         val caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
         val azar = SecureRandom()
         return (1..24).map { caracteres[azar.nextInt(caracteres.length)] }.joinToString("")
     }
 
-    // ---------- Contraseña ----------
-
-    /**
-     * Envía a [correo] un enlace para crear una nueva contraseña.
-     * [alTerminar] recibe null si salió bien o un mensaje de error.
-     * Si el correo no tiene cuenta también responde "bien": así nadie puede
-     * averiguar qué correos están registrados.
-     */
+    // si el correo no existe igual dice que salio bien, para no mostrar quien tiene cuenta
     fun enviarCorreoRecuperacion(correo: String, alTerminar: (String?) -> Unit) {
-        auth.setLanguageCode("es") // el correo llega en español
+        auth.setLanguageCode("es")
         auth.sendPasswordResetEmail(correo)
             .addOnSuccessListener { alTerminar(null) }
             .addOnFailureListener { error ->
@@ -261,10 +215,7 @@ object AuthRepositorio {
             }
     }
 
-    /**
-     * Comprueba que [clave] sea la contraseña de la cuenta con sesión iniciada.
-     * [alTerminar] recibe null si es correcta o un mensaje de error.
-     */
+    // revisa que la clave sea de la cuenta actual
     fun verificarClave(clave: String, alTerminar: (String?) -> Unit) {
         val usuario = auth.currentUser
         val correo = usuario?.email
@@ -282,13 +233,7 @@ object AuthRepositorio {
             }
     }
 
-    // ---------- Internas ----------
-
-    /**
-     * Lee el perfil de la sesión actual en Firestore. Si la cuenta no tiene perfil
-     * o está desactivada, cierra la sesión y avisa: así un usuario desactivado
-     * por el administrador no puede entrar.
-     */
+    // busca el perfil, si no existe o esta desactivado cierra la sesion
     private fun leerRolDeSesion(alTerminar: (ResultadoAuth) -> Unit) {
         val usuario = auth.currentUser
         if (usuario == null) {
@@ -316,16 +261,15 @@ object AuthRepositorio {
                     }
                 }
             }
-            // Si falla la lectura (por ejemplo sin internet) no se cierra la sesión
             .addOnFailureListener { alTerminar(ResultadoAuth.Error(traducirError(it))) }
     }
 
+    // true si fue por correo o clave mala
     private fun esErrorDeCredenciales(error: Exception): Boolean =
         error is FirebaseAuthInvalidCredentialsException || error is FirebaseAuthInvalidUserException
 
-    /** Convierte los errores de Firebase en mensajes claros en español. */
+    // pasa los errores de firebase a mensajes claros
     private fun traducirError(error: Exception): String = when (error) {
-        // Esta va primero: "contraseña débil" es un tipo de credencial inválida
         is FirebaseAuthWeakPasswordException ->
             "La contraseña es muy débil. Usa al menos $LARGO_MINIMO_CLAVE caracteres."
         is FirebaseAuthUserCollisionException ->

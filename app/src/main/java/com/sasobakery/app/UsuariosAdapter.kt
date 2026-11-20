@@ -9,31 +9,28 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+// roles de la app, se guardan en firestore en minuscula
 enum class Rol(val etiqueta: String) {
     COMPRADOR("Comprador"),
     VENDEDOR("Vendedor"),
     ADMINISTRADOR("Administrador")
 }
 
-/**
- * Un usuario de la app tal como se ve en la lista del administrador.
- * [id] es el uid de Firebase Authentication, que también es el ID de su documento
- * en la colección "usuarios" de Firestore.
- */
+// usuario de la lista del admin
 data class Usuario(
     val iniciales: String,
     val nombre: String,
     val correo: String,
     val rol: Rol,
     val id: String = "",
-    val activo: Boolean = true // false = cuenta desactivada
+    val activo: Boolean = true
 )
 
+// filas de usuarios, el boton de tres puntos abre el menu
 class UsuariosAdapter(
     private var items: List<Usuario> = emptyList(),
     private val alTocarMas: (Usuario, View) -> Unit = { _, _ -> }
 ) : RecyclerView.Adapter<UsuariosAdapter.VH>() {
-
     class VH(vista: View) : RecyclerView.ViewHolder(vista) {
         val tvIniciales: TextView = vista.findViewById(R.id.tvIniciales)
         val tvNombre: TextView = vista.findViewById(R.id.tvNombre)
@@ -77,6 +74,7 @@ class UsuariosAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
+    // cambia la lista y la vuelve a pintar
     fun submit(nuevos: List<Usuario>) {
         items = nuevos
         notifyDataSetChanged()

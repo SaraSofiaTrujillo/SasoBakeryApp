@@ -21,20 +21,23 @@ import com.google.android.material.materialswitch.MaterialSwitch
 import java.io.File
 import java.io.FileOutputStream
 
+// formulario para crear o editar un producto, lo usan admin y vendedor
 class ProductoFormularioActivity : AppCompatActivity() {
-
     companion object {
+        // id del producto a editar, si no llega es un producto nuevo
         const val EXTRA_PRODUCTO_ID = "producto_id"
     }
 
+    // porciones que se pueden elegir
     private val opcionesPorciones = listOf(1, 2, 4, 6, 8, 10, 12, 16, 20)
 
-    private var productoId = "" // vacío = producto nuevo
-    private var enCurso = false // evita guardar dos veces mientras Firebase responde
+    private var productoId = ""
+    private var enCurso = false
     private var productoOriginal: ProductoInventario? = null
     private var categoriaActual = "Tortas"
     private var porcionesActual = 10
-    private var imagenNueva: String? = null // foto nueva elegida, ya convertida a Base64
+    // foto recien elegida en base64, si es null se deja la que ya tenia
+    private var imagenNueva: String? = null
 
     private lateinit var ivFoto: ImageView
     private lateinit var etNombre: EditText
@@ -46,7 +49,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
     private lateinit var etStock: EditText
     private lateinit var tvPorciones: TextView
 
-    // Abre la galería; la foto elegida se reduce y se convierte a Base64 en segundo plano
+    // abre la galeria y procesa la foto en otro hilo para no congelar la pantalla
     private val elegirFoto = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             Toast.makeText(this, "Procesando foto…", Toast.LENGTH_SHORT).show()
@@ -90,13 +93,13 @@ class ProductoFormularioActivity : AppCompatActivity() {
 
         colorearInterruptor()
 
+        // con id edita, sin id crea uno nuevo
         productoId = intent.getStringExtra(EXTRA_PRODUCTO_ID).orEmpty()
         if (productoId.isEmpty()) {
             prepararNuevo()
         } else {
             val existente = InventarioRepositorio.buscarPorId(productoId)
             if (existente == null) {
-                // Si no lo encuentra, cierra la pantalla para no crear un duplicado por error
                 Toast.makeText(this, "Ese producto ya no existe", Toast.LENGTH_SHORT).show()
                 finish()
                 return
@@ -114,6 +117,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
         tvPorciones.setOnClickListener { mostrarMenuPorciones() }
     }
 
+    // pone los datos del producto en el formulario para editarlo
     private fun llenarCampos(p: ProductoInventario) {
         findViewById<TextView>(R.id.tvTitulo).text = "Editar producto"
         findViewById<TextView>(R.id.btnGuardar).text = "Guardar cambios"
@@ -131,6 +135,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
         tvPorciones.text = textoPorciones(porcionesActual)
     }
 
+    // valores iniciales para un producto nuevo
     private fun prepararNuevo() {
         findViewById<TextView>(R.id.tvTitulo).text = "Crear producto"
         findViewById<TextView>(R.id.btnGuardar).text = "Crear producto"
@@ -143,6 +148,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
         tvPorciones.text = textoPorciones(porcionesActual)
     }
 
+    // colores de los switch, activo y apagado
     private fun colorearInterruptor() {
         val estados = arrayOf(
             intArrayOf(android.R.attr.state_checked),
@@ -160,6 +166,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
         }
     }
 
+    // foto nueva, si no la que tenia, si no el icono por defecto
     private fun mostrarFoto() {
         ivFoto.mostrarFotoDesde(
             imagenNueva ?: productoOriginal?.imagenBase64,
@@ -168,6 +175,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
         )
     }
 
+    // menu para elegir categoria, marca la actual con check
     private fun mostrarMenuCategorias() {
         val menu = PopupMenu(this, tvCategoria)
         InventarioRepositorio.categorias.forEachIndexed { indice, categoria ->
@@ -182,6 +190,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
         menu.show()
     }
 
+    // menu para elegir porciones, marca la actual con check
     private fun mostrarMenuPorciones() {
         val menu = PopupMenu(this, tvPorciones)
         opcionesPorciones.forEachIndexed { indice, cantidad ->
@@ -200,7 +209,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
     private fun textoPorciones(cantidad: Int): String =
         if (cantidad == 1) "1 porción" else "$cantidad porciones"
 
-
+    // valida nombre y precio y arma el producto para guardarlo
     private fun guardar() {
         if (enCurso) return
 
@@ -226,7 +235,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
             precio = precio,
             stock = stock,
             imagen = productoOriginal?.imagen,
-            id = productoId, // vacío = nuevo; con texto = actualiza ese producto
+            id = productoId,
             descripcion = etDescripcion.text.toString().trim(),
             disponible = switchDisponible.isChecked,
             destacado = switchDestacado.isChecked,
@@ -234,10 +243,10 @@ class ProductoFormularioActivity : AppCompatActivity() {
             imagenBase64 = imagenNueva ?: productoOriginal?.imagenBase64
         )
 
+        // se guarda antes porque el texto del mensaje depende de si era nuevo
         val esNuevo = productoId.isEmpty()
         cambiarEstadoCarga(true)
         InventarioRepositorio.guardar(producto) { error ->
-            // Si la pantalla ya se cerró mientras esperaba, no se hace nada
             if (!isFinishing && !isDestroyed) {
                 cambiarEstadoCarga(false)
                 if (error != null) {
@@ -251,7 +260,7 @@ class ProductoFormularioActivity : AppCompatActivity() {
         }
     }
 
-    // Mientras Firebase responde, los botones se bloquean y el texto cambia
+    // bloquea los botones mientras guarda
     private fun cambiarEstadoCarga(cargando: Boolean) {
         enCurso = cargando
         val boton = findViewById<TextView>(R.id.btnGuardar)

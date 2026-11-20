@@ -16,12 +16,9 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.firestore.ListenerRegistration
 
-/**
- * Pantalla "Más" del vendedor: sus datos personales (editables: nombre y teléfono) y
- * los datos del negocio, que se ven pero solo los modifica el administrador.
- */
+// perfil del vendedor, datos personales y de la tienda
 class PerfilVendedorActivity : AppCompatActivity() {
-
+    // escucha de los datos del negocio, se activa en onStart y se quita en onStop
     private var registroNegocio: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,11 +32,9 @@ class PerfilVendedorActivity : AppCompatActivity() {
             insets
         }
 
-        // Botones principales
         findViewById<View>(R.id.btnEditar).setOnClickListener { mostrarEditar() }
         findViewById<View>(R.id.btnCerrarSesion).setOnClickListener { confirmarCerrarSesion() }
 
-        // Menú inferior: Más ya es esta pantalla
         findViewById<View>(R.id.navResumen).setOnClickListener { volverAlResumen() }
         findViewById<View>(R.id.navPedidos).setOnClickListener {
             startActivity(Intent(this, PedidosVendedorActivity::class.java))
@@ -51,7 +46,7 @@ class PerfilVendedorActivity : AppCompatActivity() {
         }
     }
 
-    // Cada vez que se vuelve a esta pantalla se leen de nuevo los datos personales
+    // al volver se recarga el perfil de la cuenta
     override fun onResume() {
         super.onResume()
         mostrarPerfil()
@@ -60,8 +55,7 @@ class PerfilVendedorActivity : AppCompatActivity() {
         }
     }
 
-    // Mientras se ve la pantalla, escucha los datos del negocio: si el administrador
-    // los cambia, aquí se actualizan solos.
+    // si el admin cambia los datos del negocio se actualizan aqui
     override fun onStart() {
         super.onStart()
         registroNegocio = NegocioRepositorio.escuchar(
@@ -76,6 +70,7 @@ class PerfilVendedorActivity : AppCompatActivity() {
         registroNegocio = null
     }
 
+    // pinta cabecera y datos
     private fun mostrarPerfil() {
         val p = PerfilVendedorRepositorio.obtener()
 
@@ -88,14 +83,12 @@ class PerfilVendedorActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvDatoTelefono).text =
             if (p.telefono.isBlank()) "Sin registrar" else Telefono.mostrar(p.telefono)
 
-        // Datos del negocio (solo lectura)
         findViewById<TextView>(R.id.tvDatoNegocio).text = p.negocio
         findViewById<TextView>(R.id.tvDatoDireccion).text = p.direccion
         findViewById<TextView>(R.id.tvDatoHorario).text = p.horario
     }
 
-    // ---------- Editar información ----------
-
+    // hoja para cambiar nombre y telefono
     private fun mostrarEditar() {
         val actual = PerfilVendedorRepositorio.obtener()
         val dialogo = BottomSheetDialog(this)
@@ -108,7 +101,6 @@ class PerfilVendedorActivity : AppCompatActivity() {
         val etHorario = vista.findViewById<EditText>(R.id.etPerfilHorario)
         val btnGuardar = vista.findViewById<TextView>(R.id.btnGuardarEdicion)
 
-        // Se llenan con los datos actuales (el correo solo se muestra)
         etNombre.setText(actual.nombre)
         vista.findViewById<TextView>(R.id.tvPerfilCorreo).text = actual.correo
         etTelefono.setText(Telefono.mostrar(actual.telefono))
@@ -116,7 +108,7 @@ class PerfilVendedorActivity : AppCompatActivity() {
         etDireccion.setText(actual.direccion)
         etHorario.setText(actual.horario)
 
-        // Los datos del negocio los define el administrador: aquí solo se ven
+        // los datos del negocio solo los edita el admin
         listOf(etNegocio, etDireccion, etHorario).forEach {
             it.isEnabled = false
             it.alpha = 0.6f
@@ -126,6 +118,7 @@ class PerfilVendedorActivity : AppCompatActivity() {
             dialogo.dismiss()
         }
 
+        // valida y guarda, el boton se bloquea mientras tanto
         btnGuardar.setOnClickListener {
             val nombre = etNombre.text.toString().trim()
             val telefono = Telefono.normalizar(etTelefono.text.toString())
@@ -160,16 +153,13 @@ class PerfilVendedorActivity : AppCompatActivity() {
         }
 
         dialogo.setContentView(vista)
-        // Se abre completa y el teclado no tapa los campos
         dialogo.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         dialogo.behavior.skipCollapsed = true
         dialogo.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         dialogo.show()
     }
 
-    // ---------- Navegación ----------
-
-    // Vuelve al panel del vendedor que ya estaba abierto (no abre uno nuevo encima)
+    // vuelve al resumen que ya estaba abierto
     private fun volverAlResumen() {
         val intent = Intent(this, VendedorPrincipalActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -186,7 +176,7 @@ class PerfilVendedorActivity : AppCompatActivity() {
             .show()
     }
 
-    // Cierra la sesión de Firebase y borra el historial: Atrás no regresa al perfil
+    // borra la sesion y deja el login sin pantallas atras
     private fun cerrarSesion() {
         AuthRepositorio.cerrarSesion()
         val intent = Intent(this, LoginActivity::class.java)

@@ -4,7 +4,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 
-// Datos de contacto de la tienda
+// datos de la tienda que ven todos los usuarios
 data class DatosNegocio(
     val nombre: String,
     val telefono: String,
@@ -12,18 +12,13 @@ data class DatosNegocio(
     val horario: String
 )
 
-/**
- * Datos de Saso Bakery, la única tienda de la app. Viven en un solo documento de
- * Firestore (negocio/principal): lo leen todos los usuarios con sesión y solo lo
- * modifica el administrador.
- */
+// datos del negocio, un solo documento que leen todos y solo edita el admin
 object NegocioRepositorio {
-
     private const val COLECCION = "negocio"
     private const val DOCUMENTO = "principal"
     private val db get() = FirebaseFirestore.getInstance()
 
-    // Lo que se muestra mientras el administrador no haya guardado los datos reales
+    // se usan si el documento aun no existe
     val porDefecto = DatosNegocio(
         nombre = "Saso Bakery",
         telefono = "+57 300 123 4567",
@@ -31,17 +26,12 @@ object NegocioRepositorio {
         horario = "Lun - Sáb · 8:00 a. m. - 6:00 p. m."
     )
 
-    // Última copia recibida de Firestore (se actualiza sola mientras hay una escucha activa)
+    // ultimos datos que llegaron
     private var actual = porDefecto
 
-    /** Los datos del negocio que ya llegaron (o los de por defecto). */
     fun obtener(): DatosNegocio = actual
 
-    /**
-     * Escucha el documento del negocio: [alCambiar] se llama al empezar y cada vez que el
-     * administrador lo modifica. Hay que cancelar el ListenerRegistration cuando la
-     * pantalla deja de verse.
-     */
+    // escucha cambios del negocio, los campos vacios usan los por defecto
     fun escuchar(
         alCambiar: (DatosNegocio) -> Unit,
         alFallar: (String) -> Unit
@@ -64,7 +54,7 @@ object NegocioRepositorio {
             alCambiar(actual)
         }
 
-    /** Guarda los datos del negocio. [alTerminar] recibe null si salió bien, o el error. */
+    // guarda los datos, solo el admin tiene permiso
     fun guardar(datos: DatosNegocio, alTerminar: (String?) -> Unit) {
         db.collection(COLECCION).document(DOCUMENTO).set(
             mapOf(
@@ -78,6 +68,7 @@ object NegocioRepositorio {
             .addOnFailureListener { alTerminar(mensajeDeError(it)) }
     }
 
+    // mensaje segun el error
     private fun mensajeDeError(error: Exception): String =
         if (error is FirebaseFirestoreException &&
             error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED

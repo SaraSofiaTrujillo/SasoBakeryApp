@@ -12,8 +12,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.ListenerRegistration
 
+// categorias del admin con cuantos productos tiene cada una
 class CategoriasActivity : AppCompatActivity() {
-
+    // escucha de firestore, se activa en onStart y se quita en onStop
     private var registro: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,6 +32,7 @@ class CategoriasActivity : AppCompatActivity() {
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = CategoriasAdapter(emptyList()) { proximamente() }
 
+        // los botones de menu y nueva categoria todavia no estan hechos
         findViewById<View>(R.id.btnMenu).setOnClickListener { proximamente() }
         findViewById<View>(R.id.btnNuevaCategoria).setOnClickListener { proximamente() }
 
@@ -48,7 +50,7 @@ class CategoriasActivity : AppCompatActivity() {
         }
     }
 
-    // Cuenta los productos reales de cada categoría y se actualiza solo
+    // cuenta los productos por categoria en tiempo real
     override fun onStart() {
         super.onStart()
         registro = InventarioRepositorio.escuchar(
@@ -69,6 +71,7 @@ class CategoriasActivity : AppCompatActivity() {
         registro = null
     }
 
+    // lista de productos, esta reemplaza a la actual
     private fun abrirProductos() {
         startActivity(Intent(this, ProductosCategoriasActivity::class.java))
         finish()

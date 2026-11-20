@@ -13,12 +13,14 @@ import androidx.annotation.DrawableRes
 import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 
+// nivel de stock con el color que se muestra
 enum class NivelStock(val color: String) {
     DISPONIBLE("#3F7D5A"),
     BAJO("#B7791F"),
     AGOTADO("#C2485F")
 }
 
+// producto como se guarda en firestore, lo usan todos los roles
 data class ProductoInventario(
     val nombre: String,
     val categoria: String,
@@ -29,11 +31,11 @@ data class ProductoInventario(
     val descripcion: String = "",
     val disponible: Boolean = true,
     val porciones: Int = 1,
-    val imagenUri: String? = null, // foto elegida de la galería
-    val destacado: Boolean = false, // aparece en "Favoritos de Saso" del comprador
-    val imagenBase64: String? = null // foto del producto como texto Base64 (se guarda en Firestore)
+    val imagenUri: String? = null,
+    val destacado: Boolean = false,
+    val imagenBase64: String? = null
 ) {
-
+    // 5 o menos es stock bajo
     val nivel: NivelStock
         get() = when {
             stock <= 0 -> NivelStock.AGOTADO
@@ -41,6 +43,7 @@ data class ProductoInventario(
             else -> NivelStock.DISPONIBLE
         }
 
+    // texto de cuantas unidades quedan
     val textoStock: String
         get() = when {
             stock <= 0 -> "Agotado"
@@ -49,13 +52,14 @@ data class ProductoInventario(
         }
 }
 
+// numero con puntos de miles
 private fun formatoPrecio(valor: Int): String =
     String.format(Locale.US, "%,d", valor).replace(",", ".")
 
+// filas del inventario del vendedor
 class InventarioAdapter(
     private val onMasClick: (ProductoInventario) -> Unit
 ) : RecyclerView.Adapter<InventarioAdapter.VH>() {
-
     private var items: List<ProductoInventario> = emptyList()
 
     class VH(vista: View) : RecyclerView.ViewHolder(vista) {
@@ -78,11 +82,11 @@ class InventarioAdapter(
         val p = items[position]
         holder.tvNombre.text = p.nombre
         holder.tvDetalle.text = "${p.categoria} · \$ ${formatoPrecio(p.precio)}"
+        // un producto oculto muestra desactivado en vez del stock
         if (p.disponible) {
             holder.tvStock.text = p.textoStock
             holder.tvStock.setTextColor(Color.parseColor(p.nivel.color))
         } else {
-            // Producto desactivado: el comprador no lo ve, pero el vendedor sí
             holder.tvStock.text = "Desactivado"
             holder.tvStock.setTextColor(Color.parseColor("#8A8394"))
         }
@@ -93,6 +97,7 @@ class InventarioAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
+    // cambia la lista y la vuelve a pintar
     fun submit(nuevos: List<ProductoInventario>) {
         items = nuevos
         notifyDataSetChanged()

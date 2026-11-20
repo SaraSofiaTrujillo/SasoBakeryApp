@@ -6,29 +6,21 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 
-/**
- * Acceso a la colección "productos" de Firestore: listar en tiempo real, crear,
- * editar y descontar stock. Guarda además una copia en memoria de la última lista
- * recibida, para que el carrito y el detalle puedan consultar un producto al instante.
- */
+// todo lo de la coleccion productos, listar, crear, editar y descontar stock
 object InventarioRepositorio {
-
+    // categorias fijas de la tienda
     val categorias = listOf("Tortas", "Postres", "Brownies", "Galletas")
 
     private const val COLECCION = "productos"
     private val db get() = FirebaseFirestore.getInstance()
 
-    // Última lista recibida de Firestore (se actualiza sola mientras hay una escucha activa)
+    // ultima lista que llego de firestore, asi el carrito consulta rapido
     private var productos: List<ProductoInventario> = emptyList()
 
-    // true cuando ya llegó la lista real de Firestore (no solo una copia vacía del caché)
+    // true cuando ya llegaron los productos reales
     private var cargado = false
 
-    /**
-     * Escucha la lista de productos: [alCambiar] se llama una vez al empezar y de nuevo
-     * cada vez que alguien crea o edita un producto. Hay que cancelar el
-     * ListenerRegistration que devuelve cuando la pantalla deja de verse.
-     */
+    // lista de productos en tiempo real, hay que cancelarla en onStop
     fun escuchar(
         alCambiar: (List<ProductoInventario>) -> Unit,
         alFallar: (String) -> Unit
@@ -45,32 +37,22 @@ object InventarioRepositorio {
             alCambiar(productos)
         }
 
-    // ---------- Consultas sobre la copia en memoria ----------
-
     fun obtenerTodos(): List<ProductoInventario> = productos
 
-    // ¿Ya llegaron los productos reales? Hasta entonces no conviene ajustar el carrito.
     fun estaCargado(): Boolean = cargado
 
     fun buscarPorId(id: String): ProductoInventario? = productos.firstOrNull { it.id == id }
 
-    /** Solo los productos que el vendedor dejó disponibles para la venta. */
+    // solo los productos disponibles para la venta
     fun obtenerCatalogo(): List<ProductoInventario> = productos.filter { it.disponible }
 
-    /**
-     * "Favoritos de Saso": los productos que el vendedor marcó como destacados.
-     * Si todavía no hay ninguno marcado, se muestran los primeros 4 disponibles.
-     */
+    // los destacados, si no hay ninguno muestra los primeros 4
     fun obtenerFavoritosDeSaso(): List<ProductoInventario> {
         val destacados = obtenerCatalogo().filter { it.destacado }
         return if (destacados.isNotEmpty()) destacados else obtenerCatalogo().take(4)
     }
-    // ---------- Escritura en Firestore ----------
 
-    /**
-     * Crea el producto (si su id está vacío) o actualiza el existente.
-     * [alTerminar] recibe null si salió bien, o el mensaje de error.
-     */
+    // crea el producto si no tiene id, si tiene lo actualiza
     fun guardar(producto: ProductoInventario, alTerminar: (String?) -> Unit) {
         val datos = mutableMapOf<String, Any>(
             "nombre" to producto.nombre,
@@ -83,14 +65,12 @@ object InventarioRepositorio {
             "destacado" to producto.destacado
         )
 
-        // La foto solo se escribe si el producto tiene una
+        // la foto solo se escribe si hay una
         if (producto.imagenBase64 != null) datos["imagen"] = producto.imagenBase64
 
         val tarea = if (producto.id.isEmpty()) {
-            // Producto nuevo: Firestore le inventa el id
             db.collection(COLECCION).add(datos + ("creado" to FieldValue.serverTimestamp()))
         } else {
-            // Producto existente: solo se cambian estos campos
             db.collection(COLECCION).document(producto.id).update(datos)
         }
         tarea
@@ -98,22 +78,20 @@ object InventarioRepositorio {
             .addOnFailureListener { alTerminar(mensajeDeError(it)) }
     }
 
-    /** Muestra u oculta un producto en el catálogo sin tocar sus demás datos. */
+    // muestra u oculta el producto sin borrarlo
     fun cambiarDisponibilidad(id: String, disponible: Boolean, alTerminar: (String?) -> Unit) {
         db.collection(COLECCION).document(id).update("disponible", disponible)
             .addOnSuccessListener { alTerminar(null) }
             .addOnFailureListener { alTerminar(mensajeDeError(it)) }
     }
 
-    /** Resta unidades al stock real en Firestore (se usa al confirmar un pago). */
+    // resta unidades al stock
     fun descontarStock(id: String, cantidad: Int) {
         db.collection(COLECCION).document(id)
             .update("stock", FieldValue.increment(-cantidad.toLong()))
     }
 
-    // ---------- Utilidades ----------
-
-    // Convierte un documento de Firestore en un ProductoInventario
+    // pasa el documento de firestore a ProductoInventario
     private fun aProducto(doc: DocumentSnapshot) = ProductoInventario(
         nombre = doc.getString("nombre").orEmpty(),
         categoria = doc.getString("categoria") ?: categorias.first(),
@@ -121,13 +99,14 @@ object InventarioRepositorio {
         stock = (doc.getLong("stock") ?: 0L).toInt(),
         id = doc.id,
         descripcion = doc.getString("descripcion").orEmpty(),
-        // Si el campo no existe se considera disponible
+        // si el campo no existe cuenta como disponible
         disponible = doc.getBoolean("disponible") != false,
         porciones = (doc.getLong("porciones") ?: 1L).toInt(),
         destacado = doc.getBoolean("destacado") == true,
         imagenBase64 = doc.getString("imagen")
     )
 
+    // mensaje segun el error
     private fun mensajeDeError(error: Exception): String =
         if (error is FirebaseFirestoreException) {
             when (error.code) {

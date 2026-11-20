@@ -14,10 +14,9 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.ListenerRegistration
 
-
+// pantalla principal del comprador, catalogo con busqueda, categorias y carrito
 class CatalogoCompradorActivity : AppCompatActivity() {
-
-    // Dato de ejemplo (cuando exista el inicio de sesión vendrá del comprador real)
+    // nombre de relleno, el real se pone en onResume
     private val nombreComprador = "Valentina"
 
     private val adapter = CatalogoAdapter(
@@ -26,9 +25,11 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         onFavoritoClick = { producto -> FavoritosRepositorio.alternar(producto.id) }
     )
 
-    private var categoriaActual: String? = null // null = Todo
-    private var mostrarTodo = false // true = "Ver todas" (todo el catálogo)
+    private var categoriaActual: String? = null
+    // true cuando eligio ver todo el catalogo en vez de los favoritos
+    private var mostrarTodo = false
     private var registro: ListenerRegistration? = null
+    // escucha de los datos del negocio, asi la tienda ya los tiene para los pedidos
     private var registroNegocio: ListenerRegistration? = null
 
     private lateinit var scroll: ScrollView
@@ -67,9 +68,9 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         rv.layoutManager = GridLayoutManager(this, 2)
         rv.adapter = adapter
 
+        // filtra mientras se escribe
         etBuscar.doAfterTextChanged { refrescar() }
 
-        // Chips de categoría (null = Todo)
         chips = listOf(
             findViewById<TextView>(R.id.chipTodo) to null,
             findViewById<TextView>(R.id.chipTortas) to "Tortas",
@@ -85,13 +86,12 @@ class CatalogoCompradorActivity : AppCompatActivity() {
             }
         }
 
-        // "Ver todas" / "Ver menos"
         tvVerTodas.setOnClickListener {
             mostrarTodo = !mostrarTodo
             refrescar()
         }
 
-        // Banner: lleva a las tortas
+        // el banner lleva a la categoria tortas
         findViewById<View>(R.id.btnBannerVer).setOnClickListener {
             categoriaActual = "Tortas"
             mostrarTodo = false
@@ -99,16 +99,15 @@ class CatalogoCompradorActivity : AppCompatActivity() {
             irALosChips()
         }
 
-        // Carrito (encabezado y menú): todavía no existe la pantalla del carrito
         findViewById<View>(R.id.btnCarrito).setOnClickListener { abrirCarrito() }
         findViewById<View>(R.id.navCarrito).setOnClickListener { abrirCarrito() }
 
-        // Menú inferior
         findViewById<View>(R.id.navInicio).setOnClickListener { scroll.smoothScrollTo(0, 0) }
         findViewById<View>(R.id.navPerfil).setOnClickListener {
             startActivity(android.content.Intent(this, PerfilCompradorActivity::class.java))
         }
     }
+    // al volver se recarga saludo, perfil y carrito de la cuenta
     override fun onResume() {
         super.onResume()
         findViewById<TextView>(R.id.tvSaludo).text =
@@ -120,18 +119,17 @@ class CatalogoCompradorActivity : AppCompatActivity() {
                     "Hola, ${PerfilCompradorRepositorio.obtener().nombre.substringBefore(" ")}"
             }
         }
-        // Recupera el carrito guardado de esta cuenta y refresca el globito
         CarritoRepositorio.cargarDeSesion {
             if (!isFinishing && !isDestroyed) refrescar()
         }
     }
 
-    // Escucha los productos de Firestore mientras el catálogo está visible
+    // productos en tiempo real, cada cambio revisa el carrito contra el stock
     override fun onStart() {
         super.onStart()
         registro = InventarioRepositorio.escuchar(
             alCambiar = {
-                CarritoRepositorio.reconciliar() // quita del carrito lo que ya no está disponible
+                CarritoRepositorio.reconciliar()
                 refrescar()
             },
             alFallar = { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
@@ -150,6 +148,7 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         registroNegocio = null
     }
 
+    // arma la lista segun busqueda, categoria y si esta en el inicio
     private fun refrescar() {
         val texto = normalizarTexto(etBuscar.text.toString())
         val buscando = texto.isNotEmpty()
@@ -165,10 +164,11 @@ class CatalogoCompradorActivity : AppCompatActivity() {
             }
         }
 
+        // en el inicio salen solo los favoritos, en otro caso el catalogo completo
         val base = if (enInicio && !mostrarTodo) {
-            InventarioRepositorio.obtenerFavoritosDeSaso() // solo los favoritos de la casa
+            InventarioRepositorio.obtenerFavoritosDeSaso()
         } else {
-            InventarioRepositorio.obtenerCatalogo() // todos los disponibles
+            InventarioRepositorio.obtenerCatalogo()
         }
         val lista = base.filter { p ->
             (categoriaActual == null || p.categoria == categoriaActual) &&
@@ -192,12 +192,14 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         actualizarGlobito()
     }
 
+    // numero del carrito, mas de 9 se muestra 9+
     private fun actualizarGlobito() {
         val total = CarritoRepositorio.cantidadTotal()
         tvBadgeCarrito.visibility = if (total == 0) View.GONE else View.VISIBLE
         tvBadgeCarrito.text = if (total > 9) "9+" else total.toString()
     }
 
+    // abre el detalle del producto
     private fun abrirDetalle(p: ProductoInventario) {
         val intent = android.content.Intent(this, ProductoDetalleActivity::class.java)
         intent.putExtra(ProductoDetalleActivity.EXTRA_PRODUCTO_ID, p.id)
@@ -207,6 +209,7 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         startActivity(android.content.Intent(this, CarritoCompradorActivity::class.java))
     }
 
+    // agrega una unidad y avisa el resultado
     private fun agregarAlCarrito(p: ProductoInventario) {
         val mensaje = when (CarritoRepositorio.agregar(p.id)) {
             ResultadoAgregar.AGREGADO -> "${p.nombre} agregado al carrito"
@@ -218,6 +221,7 @@ class CatalogoCompradorActivity : AppCompatActivity() {
         actualizarGlobito()
     }
 
+    // baja el scroll hasta las categorias
     private fun irALosChips() {
         scroll.post {
             val margen = (8 * resources.displayMetrics.density).toInt()

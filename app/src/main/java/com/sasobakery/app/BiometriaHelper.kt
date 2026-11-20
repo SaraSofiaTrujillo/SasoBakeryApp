@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import javax.crypto.Cipher
 
+// como esta la huella en el celular
 enum class EstadoBiometria {
     DISPONIBLE,
     SIN_SENSOR,
@@ -19,15 +20,18 @@ enum class EstadoBiometria {
     NO_DISPONIBLE
 }
 
+// oculta parte del correo para mostrarlo
 fun enmascararCorreo(correo: String): String {
     val arroba = correo.indexOf('@')
     if (arroba <= 0) return correo
     return correo.take(minOf(2, arroba)) + "***" + correo.substring(arroba)
 }
+// maneja el dialogo de huella, la parte de guardar claves esta en BiometriaRepositorio
 object BiometriaHelper {
-
+    // solo huella segura, sin patron ni pin
     private const val AUTENTICADORES = BiometricManager.Authenticators.BIOMETRIC_STRONG
 
+    // revisa si el celular tiene sensor y huella registrada
     fun estado(contexto: Context): EstadoBiometria =
         when (BiometricManager.from(contexto).canAuthenticate(AUTENTICADORES)) {
             BiometricManager.BIOMETRIC_SUCCESS -> EstadoBiometria.DISPONIBLE
@@ -36,6 +40,7 @@ object BiometriaHelper {
             else -> EstadoBiometria.NO_DISPONIBLE
         }
 
+    // lleva a ajustes para registrar la huella, en android viejo abre seguridad
     fun abrirAjustesDeRegistro(actividad: Activity) {
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Intent(Settings.ACTION_BIOMETRIC_ENROLL).putExtra(
@@ -51,10 +56,7 @@ object BiometriaHelper {
         }
     }
 
-    /**
-     * Activa la huella para [correo]: pide la huella una vez y guarda la contraseña
-     * [clave] cifrada. [alTerminar] recibe true si quedó activada.
-     */
+    // pide la huella y guarda el correo y la clave cifrados
     fun activar(
         actividad: FragmentActivity,
         correo: String,
@@ -89,11 +91,7 @@ object BiometriaHelper {
         )
     }
 
-    /**
-     * Entra con la huella: si es correcta, llama a [alEntrar] con el correo y la
-     * contraseña guardados (la pantalla los usa para iniciar sesión en Firebase).
-     * Si no se puede o se cancela, llama a [alFallar] (el usuario usa su contraseña).
-     */
+    // pide la huella y devuelve correo y clave para iniciar sesion
     fun entrar(
         actividad: FragmentActivity,
         alEntrar: (String, String) -> Unit,
@@ -133,6 +131,7 @@ object BiometriaHelper {
         )
     }
 
+    // muestra el dialogo de huella, lo usan activar y entrar
     private fun pedirHuella(
         actividad: FragmentActivity,
         titulo: String,
@@ -152,6 +151,7 @@ object BiometriaHelper {
                 }
             }
 
+            // si cancela no se avisa nada, los demas errores si
             override fun onAuthenticationError(codigo: Int, mensaje: CharSequence) {
                 val aviso = when (codigo) {
                     BiometricPrompt.ERROR_USER_CANCELED,
@@ -178,6 +178,7 @@ object BiometriaHelper {
         prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
     }
 
+    // toast corto para los mensajes
     private fun avisar(contexto: Context, texto: String) {
         Toast.makeText(contexto, texto, Toast.LENGTH_LONG).show()
     }

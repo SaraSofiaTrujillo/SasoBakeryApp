@@ -14,15 +14,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 
-/**
- * Pantalla de registro. Crea la cuenta con AuthRepositorio y, si sale bien,
- * entra directo a la pantalla principal del rol elegido (comprador o vendedor).
- * Los administradores no se registran aquí: los crea otro administrador.
- */
+// registro de cuentas nuevas, solo comprador o vendedor
 class RegistroActivity : AppCompatActivity() {
-
-    private var rolSeleccionado = Rol.COMPRADOR // el rol con menos permisos va por defecto
-    private var enCurso = false // evita enviar el formulario dos veces seguidas
+    // rol elegido en los chips
+    private var rolSeleccionado = Rol.COMPRADOR
+    private var enCurso = false
 
     private lateinit var etNombre: EditText
     private lateinit var etCorreo: EditText
@@ -37,7 +33,7 @@ class RegistroActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_registro)
 
-        // Mismos márgenes del login: el teclado empuja el contenido y no tapa los campos
+        // ajusta los margenes para barras del sistema y teclado
         val cabecera = findViewById<View>(R.id.headerRegistro)
         val panel = findViewById<View>(R.id.panelRegistro)
         val baseArriba = cabecera.paddingTop
@@ -58,15 +54,14 @@ class RegistroActivity : AppCompatActivity() {
         btnCrear = findViewById(R.id.btnCrearCuenta)
         etTelefono = findViewById(R.id.etTelefono)
 
-        // Botones "Mostrar / Ocultar" de las dos contraseñas
         val btnMostrarClave = findViewById<TextView>(R.id.btnMostrarClave)
         val btnMostrarConfirmar = findViewById<TextView>(R.id.btnMostrarConfirmar)
+        // ojo para ver u ocultar cada clave
         btnMostrarClave.setOnClickListener { etClave.alternarVisibilidadClave(btnMostrarClave) }
         btnMostrarConfirmar.setOnClickListener {
             etConfirmar.alternarVisibilidadClave(btnMostrarConfirmar)
         }
 
-        // Selector de rol (solo comprador o vendedor)
         chips = listOf(
             findViewById<TextView>(R.id.chipRolComprador) to Rol.COMPRADOR,
             findViewById<TextView>(R.id.chipRolVendedor) to Rol.VENDEDOR
@@ -79,7 +74,7 @@ class RegistroActivity : AppCompatActivity() {
         }
         actualizarChips()
 
-        // El botón "Listo" del teclado también crea la cuenta
+        // el boton listo del teclado crea la cuenta
         etConfirmar.setOnEditorActionListener { _, accion, _ ->
             if (accion == EditorInfo.IME_ACTION_DONE) {
                 crearCuenta()
@@ -94,7 +89,7 @@ class RegistroActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnYaTengoCuenta).setOnClickListener { finish() }
     }
 
-    // Mismo estilo de chips que el resto de la app
+    // resalta el rol elegido
     private fun actualizarChips() {
         chips.forEach { (chip, rol) ->
             if (rol == rolSeleccionado) {
@@ -107,7 +102,7 @@ class RegistroActivity : AppCompatActivity() {
         }
     }
 
-    /** Valida los campos y, si todo está bien, crea la cuenta en Firebase. */
+    // valida todos los campos en orden y despues crea la cuenta
     private fun crearCuenta() {
         if (enCurso) return
 
@@ -137,7 +132,6 @@ class RegistroActivity : AppCompatActivity() {
             return
         }
 
-        // El teléfono personal es obligatorio para todos los roles
         val telefono = Telefono.normalizar(etTelefono.text.toString())
         if (telefono == null) {
             etTelefono.error = "Escribe un teléfono válido (10 dígitos)"
@@ -147,14 +141,13 @@ class RegistroActivity : AppCompatActivity() {
 
         cambiarEstadoCarga(true)
         AuthRepositorio.registrar(nombre, correo, clave, rolSeleccionado, telefono) { resultado ->
-            // Si la pantalla ya se cerró mientras esperaba, no se hace nada
             if (isFinishing || isDestroyed) return@registrar
             cambiarEstadoCarga(false)
 
             when (resultado) {
+                // entra directo a la pantalla de su rol sin pantallas atras
                 is ResultadoAuth.Exito -> {
                     Toast.makeText(this, "Cuenta creada", Toast.LENGTH_SHORT).show()
-                    // Se borra el historial: "Atrás" no vuelve al registro ni al login
                     val intent = Intent(this, AuthRepositorio.destinoPara(resultado.rol))
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     startActivity(intent)
@@ -165,7 +158,7 @@ class RegistroActivity : AppCompatActivity() {
         }
     }
 
-    // Mientras Firebase responde, el botón cambia de texto y no se puede pulsar
+    // bloquea el boton mientras crea la cuenta
     private fun cambiarEstadoCarga(cargando: Boolean) {
         enCurso = cargando
         btnCrear.isEnabled = !cargando

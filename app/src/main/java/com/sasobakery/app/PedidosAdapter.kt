@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 
+// estados del pedido con los colores de la etiqueta
 enum class EstadoPedido(val etiqueta: String, val fondo: String, val texto: String) {
     PENDIENTE("Nuevo", "#FBE0E5", "#C2485F"),
     EN_PREPARACION("Preparando", "#E6DDF5", "#5D477F"),
@@ -17,6 +18,7 @@ enum class EstadoPedido(val etiqueta: String, val fondo: String, val texto: Stri
     ENTREGADO("Entregado", "#DDF2E6", "#3F7D5A")
 }
 
+// datos de una tarjeta de pedido del admin
 data class Pedido(
     val codigo: String,
     val cliente: String,
@@ -27,13 +29,14 @@ data class Pedido(
     val cancelado: Boolean = false
 )
 
+// numero con puntos de miles
 private fun formatoPesos(valor: Int): String =
     String.format(Locale.US, "%,d", valor).replace(",", ".")
 
+// tarjetas de pedidos del admin
 class PedidosAdapter(
     private val onClick: (Pedido) -> Unit
 ) : RecyclerView.Adapter<PedidosAdapter.VH>() {
-
     private var items: List<Pedido> = emptyList()
 
     class VH(vista: View) : RecyclerView.ViewHolder(vista) {
@@ -62,7 +65,6 @@ class PedidosAdapter(
         holder.tvFecha.text = p.fecha
         holder.tvTotal.text = "\$ ${formatoPesos(p.total)}"
 
-        // Un pedido cancelado se muestra como "Cancelado" sin importar en qué estado iba
         val etiqueta = if (p.cancelado) "Cancelado" else p.estado.etiqueta
         val fondo = if (p.cancelado) "#FBE0E0" else p.estado.fondo
         val colorTexto = if (p.cancelado) "#B23A3A" else p.estado.texto
@@ -74,6 +76,7 @@ class PedidosAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
+    // cambia la lista y la vuelve a pintar
     fun submit(nuevos: List<Pedido>) {
         items = nuevos
         notifyDataSetChanged()

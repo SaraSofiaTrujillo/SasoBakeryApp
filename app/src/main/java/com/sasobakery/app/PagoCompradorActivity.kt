@@ -16,14 +16,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 
-/**
- * Paso 3 de la compra: elegir cómo pagar y ver el resumen. Hay dos métodos:
- * contra entrega (crea el pedido de inmediato) y pago en línea con PayU (abre el
- * checkout en la pantalla "Pago seguro" y, si el pago se aprueba y se verifica,
- * crea el pedido).
- */
+// ultimo paso de la compra, elegir metodo de pago y confirmar el pedido
 class PagoCompradorActivity : AppCompatActivity() {
-
     private val adapter = MetodoPagoAdapter { metodo ->
         PagoRepositorio.idSeleccionado = metodo.id
         refrescar()
@@ -34,12 +28,13 @@ class PagoCompradorActivity : AppCompatActivity() {
     private lateinit var tvResumenEnvio: TextView
     private lateinit var tvResumenTotal: TextView
     private lateinit var btnPagar: TextView
-    private var enCurso = false // evita crear dos pedidos o abrir dos pagos por un doble toque
+    // evita que el boton se toque dos veces mientras se procesa
+    private var enCurso = false
 
-    // Pago ya aprobado cuyo pedido no se pudo guardar: se reintenta sin cobrar otra vez
+    // pago ya aprobado cuyo pedido fallo, se guarda para reintentar sin cobrar otra vez
     private var pagoAprobadoSinPedido: RespuestaPayu? = null
 
-    // Recibe el resultado de la pantalla "Pago seguro" (PayU)
+    // recibe lo que devuelve la pantalla de payu
     private val checkoutPayu = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { resultado ->
@@ -62,7 +57,7 @@ class PagoCompradorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Sin productos en el carrito no tiene sentido esta pantalla
+        // sin productos no hay nada que pagar
         if (CarritoRepositorio.cantidadTotal() == 0) {
             finish()
             return
@@ -93,9 +88,7 @@ class PagoCompradorActivity : AppCompatActivity() {
         refrescar()
     }
 
-    // ---------- Pantalla ----------
-
-    /** Vuelve a dibujar las opciones, el resumen y el botón con los datos actuales. */
+    // actualiza metodos y el resumen de valores
     private fun refrescar() {
         adapter.submit(PagoRepositorio.metodos(), PagoRepositorio.metodoElegido().id)
 
@@ -111,12 +104,9 @@ class PagoCompradorActivity : AppCompatActivity() {
         btnPagar.text = "Pagar ${formatearCop(total)}"
     }
 
-    // ---------- Pagar ----------
-
-    /** Según el método elegido: crea el pedido contra entrega o inicia el pago en línea. */
+    // contra entrega crea el pedido directo, en linea abre payu
     private fun pagar() {
         if (enCurso) return
-        // Si ya se pagó (carrito vacío), un segundo toque no hace nada
         if (CarritoRepositorio.cantidadTotal() == 0) return
 
         val metodo = PagoRepositorio.metodoElegido()
@@ -127,7 +117,7 @@ class PagoCompradorActivity : AppCompatActivity() {
             return
         }
 
-        // Si ya se cobró un pago pero el pedido no se guardó, se reintenta sin cobrar otra vez
+        // si ya se pago antes solo se reintenta crear el pedido
         val pendiente = pagoAprobadoSinPedido
         if (pendiente != null) {
             crearPedido(pendiente)
@@ -136,7 +126,7 @@ class PagoCompradorActivity : AppCompatActivity() {
         pagarEnLinea()
     }
 
-    /** Revisa el carrito, el teléfono y el stock, y abre la pantalla "Pago seguro". */
+    // revisa telefono y stock antes de abrir payu
     private fun pagarEnLinea() {
         val problema = PagoRepositorio.validarAntesDePagar()
         if (problema != null) {
@@ -156,13 +146,11 @@ class PagoCompradorActivity : AppCompatActivity() {
         checkoutPayu.launch(intent)
     }
 
-    /** Decide qué hacer con lo que devolvió PayU. */
+    // segun el estado que devuelve payu, solo se crea el pedido si esta aprobado y verificado
     private fun alResponderPayu(r: RespuestaPayu) {
         when {
-            // Aprobado y verificado: ahora sí se crea el pedido
             r.aprobada && r.verificada -> crearPedido(r)
 
-            // PayU dice aprobado pero los datos no coinciden: no se crea el pedido
             r.aprobada -> avisar(
                 "No pudimos verificar el pago",
                 "PayU reportó el pago como aprobado, pero la firma, la referencia o el valor " +
@@ -184,6 +172,7 @@ class PagoCompradorActivity : AppCompatActivity() {
         }
     }
 
+    // dialogo simple con un solo boton
     private fun avisar(titulo: String, texto: String) {
         MaterialAlertDialogBuilder(this)
             .setTitle(titulo)
@@ -192,10 +181,7 @@ class PagoCompradorActivity : AppCompatActivity() {
             .show()
     }
 
-    /**
-     * Crea el pedido en Firestore, descuenta el stock y vacía el carrito. [pago] es el pago
-     * de PayU ya aprobado, o null si es contra entrega.
-     */
+    // guarda el pedido, si fue un pago en linea y falla se avisa con la referencia
     private fun crearPedido(pago: RespuestaPayu?) {
         enCurso = true
         mensaje("Procesando tu pedido…")
@@ -207,7 +193,6 @@ class PagoCompradorActivity : AppCompatActivity() {
             if (pedido == null) {
                 val motivo = PagoRepositorio.mensajeError ?: "No se pudo crear el pedido"
                 if (pago != null) {
-                    // El dinero ya se cobró: se conserva el pago para poder reintentar
                     pagoAprobadoSinPedido = pago
                     mostrarPagoSinPedido(pago, motivo)
                 } else {
@@ -224,7 +209,7 @@ class PagoCompradorActivity : AppCompatActivity() {
         }
     }
 
-    /** Pago aprobado pero pedido sin guardar: se ofrece reintentar sin volver a cobrar. */
+    // explica que el pago esta aprobado pero el pedido no se guardo
     private fun mostrarPagoSinPedido(pago: RespuestaPayu, motivo: String) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Pago aprobado, pedido sin guardar")

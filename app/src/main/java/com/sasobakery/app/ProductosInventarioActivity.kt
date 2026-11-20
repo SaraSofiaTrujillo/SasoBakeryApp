@@ -16,19 +16,22 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.ListenerRegistration
 
+// filtros de stock del inventario
 enum class FiltroStock(val etiqueta: String) {
     TODOS("Todos los estados"),
     BAJO("Stock bajo"),
     AGOTADO("Agotados")
 }
 
+// inventario del vendedor, con busqueda, categoria y filtro de stock
 class ProductosInventarioActivity : AppCompatActivity() {
-
+    // arranca con lo que ya hay en cache y luego se actualiza en vivo
     private var productos: List<ProductoInventario> = InventarioRepositorio.obtenerTodos()
+    // escucha de firestore, se activa en onStart y se quita en onStop
     private var registro: ListenerRegistration? = null
 
     private val adapter = InventarioAdapter { producto -> abrirFormulario(producto.id) }
-    private var categoriaActual: String? = null // null = Todos
+    private var categoriaActual: String? = null
     private var filtroStock = FiltroStock.TODOS
 
     private lateinit var etBuscar: EditText
@@ -61,7 +64,6 @@ class ProductosInventarioActivity : AppCompatActivity() {
 
         etBuscar.doAfterTextChanged { refrescar() }
 
-        // Chips de categoría (null = Todos)
         chips = listOf(
             findViewById<TextView>(R.id.chipTodos) to null,
             findViewById<TextView>(R.id.chipTortas) to "Tortas",
@@ -77,15 +79,16 @@ class ProductosInventarioActivity : AppCompatActivity() {
 
         btnFiltro.setOnClickListener { mostrarMenuFiltro() }
 
+        // tocar el aviso filtra los de stock bajo
         bannerStockBajo.setOnClickListener {
             filtroStock = FiltroStock.BAJO
             refrescar()
         }
 
+        // id vacio abre el formulario para crear
         findViewById<View>(R.id.btnNuevo).setOnClickListener { abrirFormulario("") }
 
         findViewById<View>(R.id.navResumen).setOnClickListener { finish() }
-        // "Pedidos" abre la gestión de pedidos y "Más" abre el perfil del vendedor
         findViewById<View>(R.id.navPedidos).setOnClickListener {
             startActivity(Intent(this, PedidosVendedorActivity::class.java))
             finish()
@@ -97,8 +100,7 @@ class ProductosInventarioActivity : AppCompatActivity() {
         refrescar()
     }
 
-    // Escucha Firestore mientras la lista está visible: si se crea o edita un
-    // producto, la lista se actualiza sola al volver del formulario.
+    // inventario en tiempo real
     override fun onStart() {
         super.onStart()
         registro = InventarioRepositorio.escuchar(
@@ -116,19 +118,21 @@ class ProductosInventarioActivity : AppCompatActivity() {
         registro = null
     }
 
+    // con id edita el producto, vacio crea uno nuevo
     private fun abrirFormulario(id: String) {
         val intent = Intent(this, ProductoFormularioActivity::class.java)
         intent.putExtra(ProductoFormularioActivity.EXTRA_PRODUCTO_ID, id)
         startActivity(intent)
     }
 
-
+    // si el producto pasa el filtro de stock elegido
     private fun cumpleStock(p: ProductoInventario): Boolean = when (filtroStock) {
         FiltroStock.TODOS -> true
         FiltroStock.BAJO -> p.nivel == NivelStock.BAJO
         FiltroStock.AGOTADO -> p.nivel == NivelStock.AGOTADO
     }
 
+    // menu del filtro de stock, marca el actual con check
     private fun mostrarMenuFiltro() {
         val menu = PopupMenu(this, btnFiltro)
         FiltroStock.values().forEachIndexed { indice, filtro ->
@@ -143,8 +147,8 @@ class ProductosInventarioActivity : AppCompatActivity() {
         menu.show()
     }
 
+    // actualiza chips con su cantidad, aviso de stock bajo y lista
     private fun refrescar() {
-
         chips.forEach { (chip, categoria) ->
             val cantidad = if (categoria == null) {
                 productos.size

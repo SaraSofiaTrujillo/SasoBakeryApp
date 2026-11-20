@@ -2,11 +2,10 @@ package com.sasobakery.app
 
 import java.util.Calendar
 
-// Los dos tipos de pago de la tienda: en línea (pasarela PayU) o al recibir/recoger
+// las dos formas de pago
 enum class TipoPago { ONLINE, CONTRA_ENTREGA }
 
-// Una opción de pago tal como se ve en la lista.
-// "badge" es el texto corto del cuadrito (PayU, $)
+// una opcion de la pantalla de pago
 data class MetodoPago(
     val id: String,
     val tipo: TipoPago,
@@ -15,17 +14,15 @@ data class MetodoPago(
     val detalle: String
 )
 
-// Lo que el comprador elige en la pantalla de Método de pago (solo en memoria).
-// La app nunca guarda datos de tarjeta: el pago en línea se hace en la página de PayU.
+// guarda el metodo elegido y arma el pedido final
 object PagoRepositorio {
-
     const val ID_ONLINE = "online"
     const val ID_CONTRA_ENTREGA = "contra_entrega"
 
-    // null = el comprador todavía no ha tocado ninguna opción
+    // metodo que eligio el comprador
     var idSeleccionado: String? = null
 
-    /** Las opciones de pago. El texto de contra entrega cambia si el comprador recoge en tienda. */
+    // opciones de pago, el texto cambia si es domicilio o recoger
     fun metodos(): List<MetodoPago> {
         val alRecibir = EntregaRepositorio.tipo == TipoEntrega.ENTREGA
         return listOf(
@@ -41,20 +38,17 @@ object PagoRepositorio {
         )
     }
 
-    /** El método elegido; si todavía no eligió ninguno, el primero de la lista. */
+    // el elegido o el primero si no ha elegido
     fun metodoElegido(): MetodoPago {
         val todos = metodos()
         return todos.firstOrNull { it.id == idSeleccionado } ?: todos.first()
     }
 
-    // Si confirmarPedido() devuelve null, aquí queda el motivo para mostrárselo al comprador
+    // ultimo error para mostrarlo en pantalla
     var mensajeError: String? = null
         private set
 
-    /**
-     * Revisa lo que se puede comprobar ANTES de abrir PayU, para no cobrar un pedido que
-     * luego no se pueda crear. Devuelve el motivo del problema, o null si todo está bien.
-     */
+    // revisa carrito, telefono y stock antes de abrir payu, devuelve el problema o null
     fun validarAntesDePagar(): String? {
         val items = CarritoRepositorio.obtenerItems()
         if (items.isEmpty()) return "Tu carrito está vacío"
@@ -68,15 +62,10 @@ object PagoRepositorio {
         return null
     }
 
-    /**
-     * Convierte el carrito en un pedido guardado en Firestore: crea el pedido, descuenta
-     * el stock y vacía el carrito. [alTerminar] recibe el pedido, o null si no se pudo
-     * (el motivo queda en [mensajeError]).
-     */
+    // crea el pedido, si fue pago en linea solo si payu aprobo y se verifico
     fun confirmarPedido(pago: RespuestaPayu? = null, alTerminar: (PedidoGestion?) -> Unit) {
         mensajeError = null
 
-        // Con pago en línea solo se crea el pedido si PayU lo aprobó y se pudo verificar
         if (pago != null && !(pago.aprobada && pago.verificada)) {
             mensajeError = "El pago no está aprobado"
             alTerminar(null)
@@ -90,13 +79,13 @@ object PagoRepositorio {
             return
         }
 
-        // Sin teléfono la tienda no podría contactar al comprador por su pedido
         if (PerfilCompradorRepositorio.obtener().telefono.isBlank()) {
             mensajeError = "Agrega tu teléfono en Perfil → Editar para que la tienda pueda contactarte"
             alTerminar(null)
             return
         }
 
+        // datos del pedido, entrega y pago
         val domicilio = EntregaRepositorio.tipo == TipoEntrega.ENTREGA
         val metodo = metodoElegido()
         val tienda = PerfilVendedorRepositorio.tienda()
@@ -104,13 +93,11 @@ object PagoRepositorio {
         val hora = "${ahora.get(Calendar.HOUR_OF_DAY)}:" +
                 String.format(java.util.Locale.US, "%02d", ahora.get(Calendar.MINUTE))
 
-        // Datos que ya conoce la app. El código, el comprador y los productos con su
-        // precio real los completa PedidosRepositorio dentro de la transacción.
         val base = PedidoGestion(
             codigo = "",
             cliente = PerfilCompradorRepositorio.obtener().nombre,
             clienteTelefono = PerfilCompradorRepositorio.obtener().telefono,
-            // Las coordenadas solo viajan si la entrega es a domicilio
+            // ubicacion solo si es a domicilio
             latitud = if (domicilio) EntregaRepositorio.latitud else null,
             longitud = if (domicilio) EntregaRepositorio.longitud else null,
             fecha = "Hoy, $hora",
@@ -131,6 +118,7 @@ object PagoRepositorio {
             tiendaDireccion = tienda.direccion
         )
 
+        // si se crea bien se vacia el carrito
         PedidosRepositorio.crear(items, base) { pedido, error ->
             if (pedido == null) {
                 mensajeError = error

@@ -6,16 +6,17 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+// categoria con su cantidad de productos
 data class Categoria(
     val nombre: String,
     val cantidadProductos: Int
 )
 
+// filas de categorias del admin
 class CategoriasAdapter(
     private val items: List<Categoria>,
     private val onClick: (Categoria) -> Unit
 ) : RecyclerView.Adapter<CategoriasAdapter.VH>() {
-
     class VH(vista: View) : RecyclerView.ViewHolder(vista) {
         val fila: View = vista.findViewById(R.id.rowCategoria)
         val tvNombre: TextView = vista.findViewById(R.id.tvNombre)

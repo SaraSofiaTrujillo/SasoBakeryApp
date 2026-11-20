@@ -30,8 +30,8 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import java.util.Locale
 
+// elige domicilio o recoger, direccion con gps, fecha y horario
 class EntregaCompradorActivity : AppCompatActivity() {
-
     private lateinit var cardDomicilio: View
     private lateinit var cardRecoger: View
     private lateinit var seccionDireccion: View
@@ -43,17 +43,16 @@ class EntregaCompradorActivity : AppCompatActivity() {
     private lateinit var chipsFecha: List<TextView>
     private lateinit var fechas: List<OpcionFecha>
 
-
-    // Partes del diálogo de dirección que se actualizan al capturar la ubicación.
-    // Son null cuando el diálogo está cerrado.
+    // vistas del dialogo de direccion, quedan en null cuando se cierra
     private var campoDireccion: EditText? = null
     private var botonUbicacion: TextView? = null
     private var textoUbicacion: TextView? = null
-    private var buscandoUbicacion = false // evita lanzar dos búsquedas a la vez
-    private var ubicacionCapturadaEnDialogo = false // ¿se capturó mientras el diálogo estaba abierto?
+    // evita pedir el gps dos veces seguidas
+    private var buscandoUbicacion = false
+    // true si se uso el gps, asi no se borran las coordenadas al guardar
+    private var ubicacionCapturadaEnDialogo = false
 
-    // Pide los permisos de ubicación y recibe la respuesta del comprador.
-    // Se pide la precisa y la aproximada: Android 12 o superior deja elegir cuál dar.
+    // resultado del permiso de ubicacion, si lo bloqueo para siempre manda a ajustes
     private val solicitudUbicacion = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { resultado ->
@@ -61,7 +60,6 @@ class EntregaCompradorActivity : AppCompatActivity() {
                 resultado[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         when {
             concedido -> alConcederUbicacion()
-            // Ya no deja volver a preguntar: solo se puede activar desde los ajustes
             !ActivityCompat.shouldShowRequestPermissionRationale(
                 this, Manifest.permission.ACCESS_FINE_LOCATION
             ) -> mostrarPermisoBloqueado()
@@ -72,6 +70,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // sin productos no hay entrega que configurar
         if (CarritoRepositorio.cantidadTotal() == 0) {
             finish()
             return
@@ -131,7 +130,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
         refrescar()
     }
 
-
+    // pinta la opcion elegida, la direccion, las fechas y el horario
     private fun refrescar() {
         val domicilio = EntregaRepositorio.tipo == TipoEntrega.ENTREGA
 
@@ -170,6 +169,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
         tvHorario.text = EntregaRepositorio.horario
     }
 
+    // lista de horarios para escoger uno
     private fun mostrarDialogoHorario() {
         val opciones = EntregaRepositorio.HORARIOS.toTypedArray()
         val actual = EntregaRepositorio.HORARIOS.indexOf(EntregaRepositorio.horario)
@@ -185,6 +185,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
             .show()
     }
 
+    // hoja para escribir la direccion o llenarla con el gps
     private fun mostrarDialogoDireccion() {
         val dialogo = BottomSheetDialog(this)
         val vista = layoutInflater.inflate(R.layout.dialog_direccion_entrega, null)
@@ -202,13 +203,11 @@ class EntregaCompradorActivity : AppCompatActivity() {
         textoUbicacion = vista.findViewById(R.id.tvEstadoUbicacion)
         botonUbicacion?.setOnClickListener { pedirUbicacion() }
         mostrarEstadoUbicacion()
-        // Al cerrar el diálogo se sueltan las referencias a sus vistas
         dialogo.setOnDismissListener {
             campoDireccion = null
             botonUbicacion = null
             textoUbicacion = null
         }
-
 
         vista.findViewById<View>(R.id.btnCancelarDireccion).setOnClickListener {
             dialogo.dismiss()
@@ -224,8 +223,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
 
             EntregaRepositorio.etiquetaDireccion =
                 etEtiqueta.text.toString().trim().ifEmpty { "Dirección" }
-            // Si cambió la dirección y no se capturó una ubicación nueva, las coordenadas
-            // anteriores ya no corresponden: se descartan para no enviar al vendedor a otro lugar
+            // si cambio la direccion a mano las coordenadas viejas ya no sirven
             if (!ubicacionCapturadaEnDialogo && direccion != direccionInicial) {
                 EntregaRepositorio.latitud = null
                 EntregaRepositorio.longitud = null
@@ -244,20 +242,17 @@ class EntregaCompradorActivity : AppCompatActivity() {
         dialogo.show()
     }
 
-    // ---------- Permiso de ubicación ----------
-
-    /** ¿El comprador ya dio permiso de ubicación (precisa o aproximada)? */
+    // vale con ubicacion precisa o aproximada
     private fun tienePermisoUbicacion(): Boolean =
         ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED
 
-    /** Punto de entrada del botón "Usar mi ubicación actual". */
+    // si ya hay permiso captura, si lo nego una vez explica para que se usa
     private fun pedirUbicacion() {
         when {
             tienePermisoUbicacion() -> alConcederUbicacion()
-            // Ya lo negó una vez: antes de volver a pedirlo se explica para qué se usa
             ActivityCompat.shouldShowRequestPermissionRationale(
                 this, Manifest.permission.ACCESS_FINE_LOCATION
             ) -> MaterialAlertDialogBuilder(this)
@@ -282,17 +277,12 @@ class EntregaCompradorActivity : AppCompatActivity() {
         )
     }
 
-    /** El permiso ya está dado: se captura la ubicación actual. */
     private fun alConcederUbicacion() {
         capturarUbicacion()
     }
 
-    /**
-     * Pide las coordenadas actuales al servicio de ubicación de Google. Con permiso
-     * "precisa" usa el GPS; con solo "aproximada" usa una ubicación de menor precisión.
-     * Si no logra ubicarse (GPS apagado, sin señal) avisa y se puede escribir la dirección.
-     */
-    @SuppressLint("MissingPermission") // el permiso se verifica en tienePermisoUbicacion()
+    @SuppressLint("MissingPermission")
+    // pide la ubicacion actual, si no hay usa la ultima conocida
     private fun capturarUbicacion() {
         if (buscandoUbicacion || !tienePermisoUbicacion()) return
         buscandoUbicacion = true
@@ -312,7 +302,6 @@ class EntregaCompradorActivity : AppCompatActivity() {
                 if (ubicacion != null) {
                     alObtenerUbicacion(ubicacion.latitude, ubicacion.longitude)
                 } else {
-                    // Sin lectura nueva: se intenta con la última ubicación conocida
                     cliente.lastLocation
                         .addOnSuccessListener { ultima ->
                             if (isFinishing || isDestroyed) return@addOnSuccessListener
@@ -335,7 +324,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
             }
     }
 
-    /** Guarda las coordenadas y trata de convertirlas en una dirección escrita. */
+    // guarda las coordenadas y trata de convertirlas en una direccion
     private fun alObtenerUbicacion(latitud: Double, longitud: Double) {
         EntregaRepositorio.latitud = latitud
         EntregaRepositorio.longitud = longitud
@@ -351,10 +340,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Convierte coordenadas en una dirección ("Cra. 7 #45-20, Bogotá"). Depende del
-     * servicio del celular: si no está disponible o falla, devuelve null y no pasa nada.
-     */
+    // de coordenadas a texto, en android 13 o mas es asincrono, antes va en un hilo
     private fun buscarDireccion(latitud: Double, longitud: Double, alTerminar: (String?) -> Unit) {
         if (!Geocoder.isPresent()) {
             alTerminar(null)
@@ -372,7 +358,6 @@ class EntregaCompradorActivity : AppCompatActivity() {
                 }
             })
         } else {
-            // En versiones anteriores la búsqueda es lenta: se hace fuera del hilo principal
             Thread {
                 val texto = try {
                     @Suppress("DEPRECATION")
@@ -386,7 +371,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
         }
     }
 
-    /** Cierra la búsqueda: restaura el botón, actualiza la línea verde y avisa. */
+    // deja el boton listo otra vez y avisa el resultado
     private fun terminarBusqueda(texto: String) {
         buscandoUbicacion = false
         botonUbicacion?.text = "Usar mi ubicación actual"
@@ -396,7 +381,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
         mensaje(texto)
     }
 
-    /** Línea verde del diálogo: aparece solo si ya hay una ubicación guardada. */
+    // muestra las coordenadas guardadas si hay
     private fun mostrarEstadoUbicacion() {
         val texto = textoUbicacion ?: return
         if (EntregaRepositorio.tieneUbicacion()) {
@@ -410,7 +395,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
         }
     }
 
-    /** El comprador marcó "no volver a preguntar": se le ofrece ir a los ajustes. */
+    // el permiso solo se puede activar desde ajustes
     private fun mostrarPermisoBloqueado() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Permiso de ubicación desactivado")
@@ -430,6 +415,7 @@ class EntregaCompradorActivity : AppCompatActivity() {
             .show()
     }
 
+    // si es domicilio exige direccion antes de seguir
     private fun continuarAlPago() {
         if (EntregaRepositorio.tipo == TipoEntrega.ENTREGA && !EntregaRepositorio.tieneDireccion()) {
             mensaje("Agrega la dirección de entrega")

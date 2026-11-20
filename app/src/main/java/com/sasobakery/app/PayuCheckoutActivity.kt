@@ -17,17 +17,10 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-/**
- * Pantalla "Pago seguro": muestra el checkout de PayU dentro de la app. La tarjeta se
- * escribe en la página de PayU, nunca en la app. Cuando PayU devuelve al comprador a la
- * dirección de respuesta, esta pantalla la intercepta, interpreta el resultado y se cierra
- * devolviéndolo a quien la abrió.
- *
- * Resultado: RESULT_OK con [EXTRA_RESPUESTA], o RESULT_CANCELED si el comprador salió.
- */
+// pantalla con el webview de payu, devuelve la respuesta a quien la abrio
 class PayuCheckoutActivity : AppCompatActivity() {
-
     companion object {
+        // datos que llegan en el intent y la respuesta que sale
         const val EXTRA_REFERENCIA = "payu_referencia"
         const val EXTRA_MONTO = "payu_monto"
         const val EXTRA_DESCRIPCION = "payu_descripcion"
@@ -39,9 +32,10 @@ class PayuCheckoutActivity : AppCompatActivity() {
     private lateinit var progreso: View
     private var referencia = ""
     private var monto = 0
-    private var terminado = false // evita entregar la respuesta dos veces
+    // evita entregar la respuesta dos veces
+    private var terminado = false
 
-    @SuppressLint("SetJavaScriptEnabled") // el checkout de PayU necesita JavaScript
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -53,6 +47,7 @@ class PayuCheckoutActivity : AppCompatActivity() {
             insets
         }
 
+        // sin referencia o monto no se puede pagar, se cierra
         referencia = intent.getStringExtra(EXTRA_REFERENCIA).orEmpty()
         monto = intent.getIntExtra(EXTRA_MONTO, 0)
         val descripcion = intent.getStringExtra(EXTRA_DESCRIPCION).orEmpty()
@@ -68,8 +63,7 @@ class PayuCheckoutActivity : AppCompatActivity() {
         web.settings.domStorageEnabled = true
 
         web.webViewClient = object : WebViewClient() {
-            // Si PayU manda al comprador a nuestra dirección de respuesta, no se carga:
-            // se lee el resultado y se cierra esta pantalla.
+            // cuando payu redirige a nuestra url de respuesta se corta la carga y se lee el resultado
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 if (request.url.toString().startsWith(PayuConfig.URL_RESPUESTA)) {
                     entregarRespuesta(request)
@@ -105,14 +99,14 @@ class PayuCheckoutActivity : AppCompatActivity() {
             override fun handleOnBackPressed() = confirmarSalir()
         })
 
-        // El formulario viaja por POST hacia el checkout de pruebas de PayU
+        // payu pide los datos por post, no por url
         web.postUrl(
             PayuConfig.URL_CHECKOUT,
             PayuConfig.cuerpoSolicitud(referencia, monto, descripcion, correo)
         )
     }
 
-    /** Interpreta lo que devolvió PayU y cierra la pantalla enviándolo a quien la abrió. */
+    // valida la respuesta con PayuConfig y la devuelve a la pantalla de pago
     private fun entregarRespuesta(request: WebResourceRequest) {
         if (terminado) return
         terminado = true
@@ -121,6 +115,7 @@ class PayuCheckoutActivity : AppCompatActivity() {
         finish()
     }
 
+    // antes de salir pregunta, cancelar no cobra nada
     private fun confirmarSalir() {
         MaterialAlertDialogBuilder(this)
             .setTitle("¿Cancelar el pago?")
@@ -134,6 +129,7 @@ class PayuCheckoutActivity : AppCompatActivity() {
             .show()
     }
 
+    // libera el webview
     override fun onDestroy() {
         if (::web.isInitialized) web.destroy()
         super.onDestroy()

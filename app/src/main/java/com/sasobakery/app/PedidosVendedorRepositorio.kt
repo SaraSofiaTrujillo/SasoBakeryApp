@@ -1,5 +1,6 @@
 package com.sasobakery.app
 
+// una linea del pedido, con el precio de cuando se compro
 data class ProductoPedido(
     val nombre: String,
     val cantidad: Int,
@@ -8,11 +9,13 @@ data class ProductoPedido(
     val subtotal: Int get() = cantidad * precioUnitario
 }
 
+// domicilio o recojo en tienda
 enum class TipoEntrega(val etiqueta: String) {
     ENTREGA("Entrega"),
     RECOJO("Recojo")
 }
 
+// un pedido con todo lo que necesitan el vendedor, el admin y el comprador
 data class PedidoGestion(
     val codigo: String,
     val cliente: String,
@@ -26,29 +29,25 @@ data class PedidoGestion(
     val direccion: String = "",
     val envio: Int = 0,
     val metodoPago: String = "",
-    // Datos que llegan con el pedido guardado en Firestore
-    val id: String = "",              // id del documento en Firestore
-    val compradorUid: String = "",    // cuenta del comprador que hizo el pedido
-    val tiendaNombre: String = "",    // datos de contacto del negocio al momento de la compra
+    val id: String = "",
+    val compradorUid: String = "",
+    val tiendaNombre: String = "",
     val tiendaTelefono: String = "",
     val tiendaDireccion: String = "",
-    val clienteTelefono: String = "", // teléfono del comprador para que la tienda lo contacte
-    // Ubicación GPS de la entrega a domicilio (null si el comprador no la capturó)
+    val clienteTelefono: String = "",
     val latitud: Double? = null,
     val longitud: Double? = null,
-    // Cómo se pagó el pedido
-    val pagoEstado: String = "",      // APROBADO (pago en línea) o CONTRA_ENTREGA
-    val pagoProveedor: String = "",   // PayU, si fue pago en línea
-    val pagoReferencia: String = "",  // referencia que la app envió a PayU
-    val pagoTransaccion: String = ""  // número de la transacción en PayU
+    val pagoEstado: String = "",
+    val pagoProveedor: String = "",
+    val pagoReferencia: String = "",
+    val pagoTransaccion: String = ""
 ) {
+    // total de productos, sin envio
     val total: Int get() = productos.sumOf { it.subtotal }
 
-    // ¿El pedido trae las coordenadas de entrega?
     val tieneUbicacion: Boolean get() = latitud != null && longitud != null
 
-    // Cómo se pagó el pedido, para mostrárselo al equipo. Los pedidos anteriores,
-    // que no guardaron el estado del pago, muestran el método que tenían.
+    // como se pago, lo que ve el vendedor para saber si cobrar
     val textoPago: String
         get() = when (pagoEstado) {
             "APROBADO" -> "Pagado en línea con PayU" +
@@ -59,8 +58,7 @@ data class PedidoGestion(
             else -> metodoPago.ifBlank { "Sin dato" }
         }
 
-    // Datos del negocio guardados con el pedido. Los pedidos de ejemplo no los tienen
-    // y usan los datos fijos de la tienda.
+    // datos de la tienda guardados en el pedido, si faltan se usan los actuales
     val negocioMostrado: String
         get() = tiendaNombre.ifBlank { PerfilVendedorRepositorio.tienda().negocio }
     val telefonoMostrado: String
@@ -69,18 +67,20 @@ data class PedidoGestion(
         get() = tiendaDireccion.ifBlank { PerfilVendedorRepositorio.tienda().direccion }
     val cantidadProductos: Int get() = productos.sumOf { it.cantidad }
 
-    // "Torta Aurora x1, Galletas de casa x2"
     val resumenProductos: String
         get() = productos.joinToString(", ") { "${it.nombre} x${it.cantidad}" }
 
+    // tipo de entrega con fecha y franja
     val textoHorario: String
         get() = if (fechaEntrega.isBlank()) "${tipo.etiqueta}: $horario"
         else "${tipo.etiqueta}: $fechaEntrega · $horario"
 
+    // un pedido cancelado se muestra gris sin importar su estado
     val etiquetaEstado: String get() = if (cancelado) "Cancelado" else estado.etiqueta
     val fondoEstado: String get() = if (cancelado) "#EFEAF5" else estado.fondo
     val colorTextoEstado: String get() = if (cancelado) "#8A8494" else estado.texto
 
+    // el pedido avanza en orden, pendiente a preparacion a listo a entregado
     val siguienteEstado: EstadoPedido?
         get() = if (cancelado) null else when (estado) {
             EstadoPedido.PENDIENTE -> EstadoPedido.EN_PREPARACION
@@ -89,6 +89,7 @@ data class PedidoGestion(
             EstadoPedido.ENTREGADO -> null
         }
 
+    // texto del boton que lo hace avanzar
     val textoAccion: String?
         get() = if (cancelado) null else when (estado) {
             EstadoPedido.PENDIENTE -> "Aceptar"
@@ -97,6 +98,7 @@ data class PedidoGestion(
             EstadoPedido.ENTREGADO -> null
         }
 
+    // se cancela mientras no se haya entregado
     val sePuedeCancelar: Boolean
         get() = !cancelado && estado != EstadoPedido.ENTREGADO
 }

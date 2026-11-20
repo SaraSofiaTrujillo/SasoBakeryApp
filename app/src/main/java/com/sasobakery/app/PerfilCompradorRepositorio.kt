@@ -3,13 +3,13 @@ package com.sasobakery.app
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-// Datos del comprador
+// datos del comprador
 data class PerfilComprador(
     val nombre: String,
     val correo: String,
     val telefono: String = ""
 ) {
-    // "Valentina Mendoza" -> "VM" (para el avatar)
+    // primeras letras de las dos primeras palabras del nombre
     val iniciales: String
         get() = nombre.trim()
             .split(" ")
@@ -18,45 +18,34 @@ data class PerfilComprador(
             .joinToString("") { it.first().uppercase() }
 }
 
-/**
- * Perfil del comprador que tiene la sesión iniciada. El nombre y el teléfono se leen de
- * Firestore (colección "usuarios") y el correo viene de Firebase Authentication.
- * Los pedidos que se muestran en el perfil llegan de Firestore (los entrega
- * PerfilCompradorActivity al escucharlos).
- */
+// perfil del comprador en memoria, con sus pedidos y puntos para la pantalla de perfil
 object PerfilCompradorRepositorio {
+    // cada 1000 pesos en pedidos es un punto
+    const val PESOS_POR_PUNTO = 1000
 
-    // ===== VALOR QUE PUEDES CAMBIAR =====
-    const val PESOS_POR_PUNTO = 1000 // 1 punto Saso por cada $ 1.000 comprados
-    // ====================================
-
+    // perfil de la cuenta actual
     private var perfil = PerfilComprador(nombre = "", correo = "")
-    private var uidCargado: String? = null // de qué cuenta es el perfil guardado en memoria
+    // cuenta a la que pertenece el perfil cargado
+    private var uidCargado: String? = null
 
-    // Pedidos reales del comprador en sesión
+    // copia de los pedidos para contar activos y puntos
     private var pedidos: List<PedidoGestion> = emptyList()
 
-    // Preferencia guardada (todavía no se envían avisos reales)
+    // interruptor de la pantalla, solo queda en memoria
     var notificaciones = true
 
-    /**
-     * Devuelve el perfil ya cargado. Si todavía no llegó de Firestore, o si cambió la
-     * cuenta, muestra algo provisional (la parte del correo antes de la @).
-     */
+    // devuelve el perfil, si cambio la cuenta lo reinicia con el correo
     fun obtener(): PerfilComprador {
         val usuario = FirebaseAuth.getInstance().currentUser
         if (usuario?.uid != uidCargado) {
-            pedidos = emptyList() // los pedidos en memoria eran de otra cuenta
+            pedidos = emptyList()
             val correo = usuario?.email.orEmpty()
             perfil = PerfilComprador(nombre = correo.substringBefore("@"), correo = correo)
         }
         return perfil
     }
 
-    /**
-     * Lee nombre y teléfono reales desde Firestore y avisa cuando termina. Si el perfil
-     * de esta cuenta ya estaba cargado, avisa de inmediato sin volver a consultar.
-     */
+    // trae nombre y telefono de firestore, si ya estaban cargados avisa de una
     fun cargarDeSesion(alTerminar: () -> Unit) {
         val usuario = FirebaseAuth.getInstance().currentUser ?: return
         if (usuario.uid == uidCargado) {
@@ -77,10 +66,7 @@ object PerfilCompradorRepositorio {
             }
     }
 
-    /**
-     * Guarda nombre y teléfono en Firestore. [alTerminar] recibe null si salió bien,
-     * o el mensaje de error.
-     */
+    // guarda nombre y telefono en firestore
     fun guardar(nuevo: PerfilComprador, alTerminar: (String?) -> Unit = {}) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
@@ -99,19 +85,18 @@ object PerfilCompradorRepositorio {
             }
     }
 
-    /** Recibe los pedidos reales que llegan de Firestore. */
+    // guarda la lista de pedidos para los contadores
     fun actualizarPedidos(lista: List<PedidoGestion>) {
         pedidos = lista
     }
 
-    /** Pedidos del comprador en sesión. */
     fun misPedidos(): List<PedidoGestion> = pedidos
 
-    /** Pedidos que todavía no terminan: ni entregados ni cancelados. */
+    // pedidos que no estan cancelados ni entregados
     fun pedidosActivos(): Int =
         misPedidos().count { !it.cancelado && it.estado != EstadoPedido.ENTREGADO }
 
-    /** Puntos Saso: salen de lo comprado en pedidos no cancelados. */
+    // un punto por cada 1000 pesos de pedidos no cancelados
     fun puntos(): Int =
         misPedidos().filter { !it.cancelado }.sumOf { it.total } / PESOS_POR_PUNTO
 }
